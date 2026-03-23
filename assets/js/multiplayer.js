@@ -11,7 +11,7 @@ function mpPlayerCount(){ return 4; } // TX42-Client: always 4 players
 function mpMaxPip(){ return 6; }     // TX42-Client: double-6 set
 function mpHandSize(){ return 7; }   // TX42-Client: 7 tiles per hand
 const MP_WS_URL = 'wss://tx42-server.onrender.com';  // TX42-Client: new server
-const MP_VERSION = 'v1.0.0-TX42';  // TX42-Client version
+const MP_VERSION = 'v21-TX42';  // TX42-Client version
 
 // ═══════════════════════════════════════════════════════════════
 // V10_FIX: Multiplayer Sync Fix Variables
@@ -1237,7 +1237,17 @@ async function mpHandleDeal(move) {
 
   // Set hands from server deal — server only sends our hand
   // Build hands array: our real hand + dummy face-down tiles for opponents
-  const myHand = move.hand || move.hands || [];
+  // V21: Server sends 'hand' (singular, array of tiles). Guard against legacy
+  // 'hands' (plural, array of ALL hands) by extracting our seat's hand.
+  let myHand = move.hand || [];
+  if (!myHand.length && move.hands) {
+    // Legacy fallback: if 'hands' is array of all hands, extract our seat
+    if (Array.isArray(move.hands[0]) && Array.isArray(move.hands[0][0])) {
+      myHand = move.hands[mpSeat] || [];
+    } else {
+      myHand = move.hands;
+    }
+  }
   const hands = [];
   for (let i = 0; i < playerCount; i++) {
     if (i === mpSeat) {
@@ -4379,13 +4389,13 @@ function mpRefreshAll() {
 }
 
 // Host: start a new hand, keeping current score
+// V21: Server auto-deals after hand completion — host no longer deals locally
 function mpHostNewHand() {
   if (!mpIsHost || !session) return;
-  console.log('[MP] Host starting new hand (keeping score)');
-  // Broadcast new hand signal
+  console.log('[MP] Host starting new hand (server will auto-deal)');
+  // Broadcast new hand signal to dismiss popups on guests
   mpSendMove({ action: 'next_hand' });
-  // Redeal
-  mpHostDeal();
+  // V21: Removed mpHostDeal() — server is source of truth and auto-deals
 }
 
 // Host: Handle missed plays response from a guest

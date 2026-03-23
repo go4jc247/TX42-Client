@@ -30,7 +30,7 @@
   };
 })();
 
-const GAME_VERSION = 'v1.0.0-TX42'; // TX42-Client version
+const GAME_VERSION = 'v21-TX42'; // TX42-Client version
 
 // ============================================================
 // Lazy Load Helper — loads JS modules on demand
@@ -7932,10 +7932,9 @@ function finalizeBidding() {
     session.status = "Everyone passed. Redealing...";
     setStatus(session.status);
     setTimeout(() => {
-      // V10_121d: In MP mode, host must broadcast new deal to guests
-      if (MULTIPLAYER_MODE && mpIsHost) {
-        mpSendMove({ action: 'next_hand' });
-        mpHostDeal();
+      // V21: In MP mode, server auto-redeals on all-pass — just wait
+      if (MULTIPLAYER_MODE) {
+        setStatus('Everyone passed. Waiting for redeal...');
       } else {
         startNewHand();
       }
@@ -8548,8 +8547,8 @@ function hideHandEndPopup(){
 document.getElementById('btnNextHand').addEventListener('click', () => {
   hideHandEndPopup();
   SFX.resumeBgmAfterResult();
-  if (MULTIPLAYER_MODE && mpIsHost) { mpHostDeal(); return; }
-  if (MULTIPLAYER_MODE && !mpIsHost) { setStatus('Waiting for host to deal...'); return; }
+  // V21: Server auto-deals next hand — just dismiss popup and wait
+  if (MULTIPLAYER_MODE) { setStatus('Waiting for next hand...'); return; }
   startNewHand();
 });
 
@@ -9956,9 +9955,9 @@ function showRoundEndSummary(){
     _reBtn.addEventListener('click', async () => {
       hideRoundEndSummary();
       SFX.resumeBgmAfterResult();
-      if (MULTIPLAYER_MODE && mpIsHost) {
-        mpSendMove({ action: 'next_hand' }); // V10_121: Tell guests to dismiss popup
-        mpHostDeal();
+      if (MULTIPLAYER_MODE) {
+        // V21: Server auto-deals next hand — just dismiss popup and wait
+        setStatus('Waiting for next hand...');
         return;
       }
       startNewHand();
