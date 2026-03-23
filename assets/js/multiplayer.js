@@ -1415,8 +1415,8 @@ function mpRunBiddingStep() {
     if (MULTIPLAYER_MODE) triggerHaptic(); // V11.4: Haptic for bid turn
     mpHideWaiting();
     mpLogEntry('STATE', 'bid-overlay', 'SHOWN for seat=' + mpSeat + ' highBid=' + biddingState.highBid);
-  } else if (mpIsHost && mpIsAI(currentBidder)) {
-    // FIX3: Check if AI action already in progress
+  } else if (false && mpIsHost && mpIsAI(currentBidder)) {
+    // TX42-Client: DISABLED — server handles all AI bidding
     if (_aiActionInProgress) {
       console.log('[FIX3] AI action already in progress, skipping duplicate');
       mpLogEntry('STATE', 'bid-ai-skip', 'AI action in progress, skipping seat=' + currentBidder);
@@ -2137,8 +2137,7 @@ async function mpHandlePlayIntent(move) {
 
 // ── GUEST: Handle confirmed play from host ──
 async function mpHandlePlayConfirmed(move) {
-  // Host already animated locally — skip
-  if (mpIsHost) return;
+  // TX42-Client: Server is source of truth — process all confirmations
 
   console.log('[MP-HA] Play confirmed: seat', move.seat, 'tile:', move.tile, 'trickComplete:', move.trickComplete, 'handComplete:', move.handComplete);
   mpLogEntry('RECV', 'play_confirmed', 'seat=' + move.seat + ' tile=' + JSON.stringify(move.tile));
@@ -2538,7 +2537,7 @@ function _guestShowTrumpSelection(winningBid) {
 }
 
 function mpHandleBidConfirmed(move) {
-  if (mpIsHost) return; // Host already processed locally
+  // TX42-Client: Server is source of truth — process all confirmations
   console.log('[MP-HA] Bid confirmed: seat', move.seat, 'bid:', move.bid);
   mpLogEntry('RECV', 'bid_confirmed', 'seat=' + move.seat + ' bid=' + move.bid);
   _clearIntentTimeout(); // V11.3: Clear bid/pass intent timeout
@@ -2593,7 +2592,7 @@ function mpHandleBidConfirmed(move) {
 }
 
 function mpHandlePassConfirmed(move) {
-  if (mpIsHost) return;
+  // TX42-Client: Server is source of truth — process all confirmations
   console.log('[MP-HA] Pass confirmed: seat', move.seat);
   mpLogEntry('RECV', 'pass_confirmed', 'seat=' + move.seat);
   _clearIntentTimeout(); // V11.3: Clear bid/pass intent timeout
@@ -2700,7 +2699,7 @@ function mpHandleTrumpIntent(move) {
 // ═══ GUEST: Confirmed trump handler ═══
 
 function mpHandleTrumpConfirmed(move) {
-  if (mpIsHost) return;
+  // TX42-Client: Server is source of truth — process all confirmations
   console.log('[MP-HA] Trump confirmed: trump=', move.trump, 'seat=', move.seat, 'nello=', move.nello);
   mpLogEntry('RECV', 'trump_confirmed', 'trump=' + move.trump + ' seat=' + move.seat);
   _clearIntentTimeout(); // V11.3: Clear trump intent timeout
@@ -3711,8 +3710,8 @@ function mpCheckWhoseTurn() {
     if (MULTIPLAYER_MODE) showYourTurnBanner(); // V11.4: Blue banner + haptic
     mpHideWaiting();
     _startTurnRecovery(); // V10_115: Safety net — re-enable clicks if stuck
-  } else if (mpIsHost && mpIsAI(currentPlayer)) {
-    // Host plays AI for empty seats
+  } else if (false && mpIsHost && mpIsAI(currentPlayer)) {
+    // TX42-Client: DISABLED — server handles all AI play
     waitingForPlayer1 = false;
     clearPlayer1ValidStates(); // V10_121: Remove faded tile highlighting
     mpWaitingForRemote = false; // V10_115: Reset — host is running AI
