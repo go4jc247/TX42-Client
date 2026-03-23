@@ -34,8 +34,7 @@ const MP_RECONNECT_DELAYS = [2000, 5000, 10000, 20000, 30000];
 let _mpHeartbeatInterval = null;
 let _mpLastPongTime = Date.now();
 let _mpReconnectAttempts = 0;
-// _mpLastActivityTime declared in game.js
-if (typeof _mpLastActivityTime === 'undefined') var _mpLastActivityTime = Date.now();
+// _mpLastActivityTime is declared in game.js — do NOT redeclare here
 
 // Diagnostic log
 const _mpDiagLog = [];
