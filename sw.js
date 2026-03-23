@@ -1,5 +1,5 @@
 // TX42-Client Service Worker — Cache-first for offline support
-const CACHE_NAME = 'tx42-client-v13';
+const CACHE_NAME = 'tx42-client-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -51,6 +51,23 @@ self.addEventListener('fetch', event => {
   // Skip WebSocket requests
   if (event.request.url.startsWith('wss://') || event.request.url.startsWith('ws://')) return;
 
+  // Network-first for .js files to ensure latest code
+  if (event.request.url.endsWith('.js') || event.request.url.includes('.js?')) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
+
+  // Cache-first for everything else
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;

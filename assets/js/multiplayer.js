@@ -485,7 +485,7 @@ function mpHandleMessage(msg) {
   }
 
   if (msg.type === 'error') {
-    mpUpdateStatus('Error: ' + msg.code, '#ef4444');
+    mpUpdateStatus('Error: ' + (msg.reason || msg.code || 'Unknown error'), '#ef4444');
     return;
   }
 
