@@ -301,7 +301,7 @@ function mpConnect(roomName) {
     mpUpdateIndicator();
     // V10_104: Remove observer panel on disconnect
     const obsPanel = document.getElementById('mpObserverPanel');
-    if (obsPanel) obsPanel.remove();
+    if (obsPanel && typeof obsPanel.remove === 'function') obsPanel.remove();
     mpObserver = false;
     // Save host state on disconnect for potential recovery
     if (mpIsHost && mpGameStarted) mpSaveHostState();
