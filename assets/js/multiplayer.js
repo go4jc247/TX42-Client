@@ -1112,6 +1112,13 @@ function mpHandleSeatAssign(move) {
     mpUpdateStatus('Seat ' + (mpSeat + 1) + ' in ' + mpRoom, '#22c55e');
     console.log('[MP] Assigned seat:', mpSeat);
   }
+  mpConnected = true;
+  // Show player list and room sections
+  var playerListEl = document.getElementById('mpPlayerList');
+  if (playerListEl) playerListEl.style.display = '';
+  // Hide room grid (already in a room)
+  var roomSection = document.getElementById('mpRoomSection');
+  if (roomSection) roomSection.style.display = 'none';
   // Acknowledge
   mpSendMove({ action: 'seat_ack', seat: mpSeat });
 }
@@ -1177,11 +1184,16 @@ function mpRenderPlayerList(players) {
     container.appendChild(div);
   }
 
-  // Show/hide start button (host only, enough players)
+  // Show/hide start button (seat 0 = room leader, controls game options and start)
   const playerCount = Object.keys(mpPlayers).length + (mpPlayers[mpSeat] ? 0 : 1);
   const startBtn = document.getElementById('mpStartGame');
   if (startBtn) {
-    startBtn.style.display = (mpIsHost && playerCount >= 2) ? '' : 'none';
+    startBtn.style.display = (mpSeat === 0 && playerCount >= 1) ? '' : 'none';
+  }
+  // Show/hide game settings (only room leader — seat 0)
+  const hostSettings = document.getElementById('mpHostSettings');
+  if (hostSettings) {
+    hostSettings.style.display = (mpSeat === 0) ? '' : 'none';
   }
 }
 
