@@ -2153,6 +2153,7 @@ async function mpHandlePlayConfirmed(move) {
 
   // Update guest's local session state (read-only updates)
   // Remove tile from hand
+  const isLocalSeat = (move.seat === mpSeat);
   const hand = session.game.hands[move.seat] || [];
   let gameHandIndex = -1;
   for (let i = 0; i < hand.length; i++) {
@@ -2163,12 +2164,25 @@ async function mpHandlePlayConfirmed(move) {
     }
   }
 
+  // For opponents with dummy [-1,-1] tiles, match by first available dummy slot
+  if (gameHandIndex < 0 && !isLocalSeat) {
+    for (let i = 0; i < hand.length; i++) {
+      if (hand[i][0] === -1 && hand[i][1] === -1) {
+        gameHandIndex = i;
+        break;
+      }
+    }
+  }
+
   // Update engine state on guest (without calling session.play)
   if (gameHandIndex >= 0) {
-    // Add to current trick
-    session.game.current_trick.push([move.seat, hand[gameHandIndex]]);
+    // Add to current trick using the ACTUAL tile from the server
+    session.game.current_trick.push([move.seat, move.tile]);
     // Remove from hand
     session.game.hands[move.seat].splice(gameHandIndex, 1);
+  } else {
+    // Fallback: still add to current trick even if hand tracking failed
+    session.game.current_trick.push([move.seat, move.tile]);
   }
   // Sync current_player from host
   session.game.current_player = move.currentPlayer;
@@ -2176,11 +2190,30 @@ async function mpHandlePlayConfirmed(move) {
   // Find and animate sprite
   const seatSprites = sprites[move.seat] || [];
   let spriteIdx = -1;
-  for (let i = 0; i < seatSprites.length; i++) {
-    const sd = seatSprites[i];
-    if (sd && sd.tile && ((sd.tile[0] === move.tile[0] && sd.tile[1] === move.tile[1]) || (sd.tile[0] === move.tile[1] && sd.tile[1] === move.tile[0]))) {
-      spriteIdx = i;
-      break;
+  // For local seat, match by tile value
+  if (isLocalSeat) {
+    for (let i = 0; i < seatSprites.length; i++) {
+      const sd = seatSprites[i];
+      if (sd && sd.tile && ((sd.tile[0] === move.tile[0] && sd.tile[1] === move.tile[1]) || (sd.tile[0] === move.tile[1] && sd.tile[1] === move.tile[0]))) {
+        spriteIdx = i;
+        break;
+      }
+    }
+  } else {
+    // For opponents, find first available (non-null) sprite slot
+    for (let i = 0; i < seatSprites.length; i++) {
+      if (seatSprites[i] !== null) {
+        spriteIdx = i;
+        break;
+      }
+    }
+    // Update the sprite's tile data to the actual tile and flip it face-up
+    if (spriteIdx >= 0 && seatSprites[spriteIdx]) {
+      const sd = seatSprites[spriteIdx];
+      sd.tile = move.tile;
+      sd.sprite._tile = move.tile;
+      sd.sprite.setState(false, true); // redraw with actual tile face
+      sd.sprite.setFaceUp(true);       // flip face-up so tile is visible
     }
   }
 

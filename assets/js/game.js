@@ -10576,54 +10576,8 @@ document.getElementById('mpStartGame').addEventListener('click', () => {
 // MP marks selection buttons
 document.querySelectorAll('.mpMarksBtn').forEach(btn => {
   btn.addEventListener('click', () => {
+    if(mpSeat !== 0) return; // only room leader can change
     mpMarksToWin = parseInt(btn.dataset.marks);
-
-  // V10_109: MP house rules — wire up checkboxes and nello buttons
-  // Initialize from current settings
-  var _mpCFD = document.getElementById('mpChkCallForDouble');
-  var _mpNDec = document.getElementById('mpChkNelloDeclare');
-  var _mpNRes = document.getElementById('mpChkNelloRestrict');
-  if(_mpCFD) _mpCFD.checked = callForDoubleEnabled;
-  if(_mpNDec) _mpNDec.checked = nelloDeclareMode;
-  if(_mpNRes) _mpNRes.checked = nelloRestrictFirst;
-  // Nello doubles buttons
-  document.querySelectorAll('.mpNelloBtn').forEach(function(nb){
-    if(nb.dataset.nello === nelloDoublesMode){
-      nb.classList.add('mpNelloBtnSelected');
-      nb.style.background = 'rgba(96,165,250,0.2)';
-      nb.style.border = '1px solid #60a5fa';
-    }
-    nb.addEventListener('click', function(){
-      if(!mpIsHost) return; // guests can't change
-      document.querySelectorAll('.mpNelloBtn').forEach(function(b){
-        b.classList.remove('mpNelloBtnSelected');
-        b.style.background = 'rgba(255,255,255,0.05)';
-        b.style.border = '1px solid rgba(255,255,255,0.15)';
-      });
-      nb.classList.add('mpNelloBtnSelected');
-      nb.style.background = 'rgba(96,165,250,0.2)';
-      nb.style.border = '1px solid #60a5fa';
-    });
-  });
-  // Doubles Follow Me buttons (MP)
-  document.querySelectorAll('.mpDfmBtn').forEach(function(db){
-    if(db.dataset.dfm === doublesFollowMe){
-      db.classList.add('mpDfmBtnSelected');
-      db.style.background = 'rgba(96,165,250,0.2)';
-      db.style.border = '1px solid #60a5fa';
-    }
-    db.addEventListener('click', function(){
-      if(!mpIsHost) return;
-      document.querySelectorAll('.mpDfmBtn').forEach(function(b){
-        b.classList.remove('mpDfmBtnSelected');
-        b.style.background = 'rgba(255,255,255,0.05)';
-        b.style.border = '1px solid rgba(255,255,255,0.15)';
-      });
-      db.classList.add('mpDfmBtnSelected');
-      db.style.background = 'rgba(96,165,250,0.2)';
-      db.style.border = '1px solid #60a5fa';
-    });
-  });
     document.querySelectorAll('.mpMarksBtn').forEach(b => {
       b.style.borderColor = 'rgba(255,255,255,0.15)';
       b.style.background = 'rgba(255,255,255,0.05)';
@@ -10632,6 +10586,36 @@ document.querySelectorAll('.mpMarksBtn').forEach(btn => {
     btn.style.borderColor = '#60a5fa';
     btn.style.background = 'rgba(96,165,250,0.2)';
     btn.classList.add('mpMarksSelected');
+  });
+});
+
+// V10_109: MP house rules — wire up nello doubles buttons (registered once at load)
+document.querySelectorAll('.mpNelloBtn').forEach(function(nb){
+  nb.addEventListener('click', function(){
+    if(mpSeat !== 0) return; // only room leader can change
+    document.querySelectorAll('.mpNelloBtn').forEach(function(b){
+      b.classList.remove('mpNelloBtnSelected');
+      b.style.background = 'rgba(255,255,255,0.05)';
+      b.style.border = '1px solid rgba(255,255,255,0.15)';
+    });
+    nb.classList.add('mpNelloBtnSelected');
+    nb.style.background = 'rgba(96,165,250,0.2)';
+    nb.style.border = '1px solid #60a5fa';
+  });
+});
+
+// Doubles Follow Me buttons (MP) — registered once at load
+document.querySelectorAll('.mpDfmBtn').forEach(function(db){
+  db.addEventListener('click', function(){
+    if(mpSeat !== 0) return; // only room leader can change
+    document.querySelectorAll('.mpDfmBtn').forEach(function(b){
+      b.classList.remove('mpDfmBtnSelected');
+      b.style.background = 'rgba(255,255,255,0.05)';
+      b.style.border = '1px solid rgba(255,255,255,0.15)';
+    });
+    db.classList.add('mpDfmBtnSelected');
+    db.style.background = 'rgba(96,165,250,0.2)';
+    db.style.border = '1px solid #60a5fa';
   });
 });
 
