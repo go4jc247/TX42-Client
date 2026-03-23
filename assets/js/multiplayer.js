@@ -2279,13 +2279,27 @@ async function mpHandlePlayConfirmed(move) {
     if (isAnimating) {
       console.warn('[MP-HA] Guest animation timeout — forcing unlock (seat', move.seat, ')');
       isAnimating = false;
-      // Drain queued plays
+      // Drain queued plays — process game state for each
       while (_mpPlayQueue.length > 0) {
-        const nextPlay = _mpPlayQueue.shift();
-        // Process synchronously — update game state without animation
-        const np = nextPlay.nextPlayer;
-        if (np !== undefined && np !== null) session.game.current_player = np;
-        console.log('[MP-HA] Drained queued play: seat', nextPlay.seat, 'next', np);
+        const qm = _mpPlayQueue.shift();
+        console.log('[MP-HA] Draining queued play: seat', qm.seat, 'tile', qm.tile);
+        // Update game state
+        if (qm.nextPlayer !== undefined && qm.nextPlayer !== null) {
+          session.game.current_player = qm.nextPlayer;
+        }
+        if (qm.trickComplete) {
+          session.game.trick_number = (session.game.trick_number || 0) + 1;
+          if (qm.trickWinner !== undefined) session.game.current_player = qm.trickWinner;
+        }
+        if (qm.handComplete) {
+          if (qm.handResult) {
+            if (qm.handResult.teamMarks) session.team_marks = qm.handResult.teamMarks;
+          }
+        }
+        // Remove a dummy tile from opponent hand
+        if (qm.seat !== mpSeat && session.game.hands[qm.seat]) {
+          session.game.hands[qm.seat].pop();
+        }
       }
       mpCheckWhoseTurn();
     }
