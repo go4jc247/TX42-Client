@@ -2308,8 +2308,39 @@ async function mpHandlePlayConfirmed(move) {
   if (spriteIdx >= 0) {
     try { await playDomino(move.seat, spriteIdx, isLead, null, null); } catch(e) { console.warn('[MP-HA] Guest playDomino error:', e); }
   } else if (!isLocalSeat) {
-    // V25: Sprite not found for opponent — skip animation, just update played state
-    console.warn('[MP-HA] No sprite for opponent seat', move.seat, '— skipping animation');
+    // V27: Sprite not found for opponent — skip ALL animation and trick handling
+    // Update game state directly and move on
+    console.warn('[MP-HA] No sprite for opponent seat', move.seat, '— fast-forwarding');
+    if (move.nextPlayer !== undefined && move.nextPlayer !== null) session.game.current_player = move.nextPlayer;
+    if (move.trickComplete && move.trickWinner !== undefined) {
+      session.game.trick_number = (session.game.trick_number || 0) + 1;
+      session.game.current_player = move.trickWinner;
+      session.game.current_trick = [];
+      if (move.teamPoints) {
+        session.game.team_points = move.teamPoints;
+        team1Score = move.teamPoints[0]; team2Score = move.teamPoints[1];
+        updateScoreDisplay();
+      }
+    }
+    if (move.handComplete && move.handResult) {
+      session.game.team_points = move.handResult.teamPoints || [0,0];
+      session.team_marks = move.handResult.teamMarks || [0,0];
+      session.status = move.handResult.status || 'Hand over';
+      setStatus(session.status);
+      updateScoreDisplay();
+      setTimeout(() => mpShowHandEnd(), 800);
+    }
+    // Remove dummy tile from opponent hand
+    if (session.game.hands[move.seat]) session.game.hands[move.seat].pop();
+    isAnimating = false;
+    clearTimeout(_animTimeout);
+    if (_mpPlayQueue.length > 0) {
+      const nextPlay = _mpPlayQueue.shift();
+      mpHandlePlayConfirmed(nextPlay);
+    } else {
+      mpCheckWhoseTurn();
+    }
+    return;
   }
 
   // Handle trick completion
