@@ -944,11 +944,11 @@ async function mpHandlePlayConfirmed(move) {
         }
 
         if (startPos) {
-          // Place at opponent hand, face-up
-          newSprite.setPose({ x: startPos.x, y: startPos.y, s: startPos.s, rz: startPos.rz, ry: 180 });
+          // Place at opponent hand, face-down (ry from layout = 0 for opponents)
+          newSprite.setPose({ x: startPos.x, y: startPos.y, s: startPos.s, rz: startPos.rz, ry: startPos.ry });
         } else if (targetPos) {
-          // Fallback: start at target
-          newSprite.setPose({ x: targetPos.x, y: targetPos.y - 40, s: targetPos.s, rz: targetPos.rz, ry: 180 });
+          // Fallback: start at target face-down
+          newSprite.setPose({ x: targetPos.x, y: targetPos.y - 40, s: targetPos.s, rz: targetPos.rz, ry: 0 });
         }
 
         bringToFront(newSprite);
@@ -956,10 +956,10 @@ async function mpHandlePlayConfirmed(move) {
         // Recenter remaining hand sprites
         recenterHand(move.seat);
 
-        // Animate to played position
+        // Animate to played position face-up (ry from layout = 180)
         if (targetPos) {
           const isLead = move.isLead;
-          await animateSprite(newSprite, { x: targetPos.x, y: targetPos.y, s: targetPos.s, rz: targetPos.rz, ry: 0 }, 350);
+          await animateSprite(newSprite, { x: targetPos.x, y: targetPos.y, s: targetPos.s, rz: targetPos.rz, ry: targetPos.ry }, 350);
           SFX.playDomino();
           if (isLead) showLeadDomino(tile);
           // Track in playedThisTrick for collectToHistory
