@@ -6597,7 +6597,7 @@ function clearAllPlaceholderText(){
 // Position player team indicators near their hands
 function positionPlayerIndicators(){
   // In multiplayer, update indicator labels to show correct player numbers
-  if (MULTIPLAYER_MODE && session && session.game) {
+  if (MULTIPLAYER_MODE && session && session.game && typeof mpVisualPlayer === 'function') {
     for (let seat = 0; seat < session.game.player_count; seat++) {
       const visualP = mpVisualPlayer(seat);
       const el = document.getElementById('playerIndicator' + visualP);
