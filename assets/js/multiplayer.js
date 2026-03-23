@@ -2583,10 +2583,15 @@ function mpHandleBidConfirmed(move) {
   // V10_121h: Check if bidding is done FIRST (before checking biddingState)
   // This handles the case where guest reconnects or biddingState is null
   if (move.biddingDone && move.bidWinner !== null && move.bidWinner !== undefined) {
+    // V22: Show the final bidder's bid BEFORE early return so it's always visible
+    const visualNum = seatToVisual(move.seat);
+    const displayBid = move.displayBid || ((move.marks > 1) ? (move.marks + 'x') : move.bid);
+    setPlaceholderText(visualNum, displayBid, 'bid');
+
     session.bid_winner_seat = move.bidWinner;
     session.current_bid = move.winningBid;
     session.bid_marks = move.winningMarks;
-    
+
     // If WE are the bid winner, show trump selection UI
     if (move.bidWinner === mpSeat) {
       _guestShowTrumpSelection(move.winningBid);
@@ -2637,11 +2642,15 @@ function mpHandlePassConfirmed(move) {
 
   // V10_121h: Check if bidding is done FIRST (before checking biddingState)
   if (move.biddingDone) {
+    // V22: Show the final passer's "Pass" BEFORE early return so it's always visible
+    const _passVisualFinal = seatToVisual(move.seat);
+    setPlaceholderText(_passVisualFinal, 'Pass', 'pass');
+
     if (move.bidWinner !== null && move.bidWinner !== undefined) {
       session.bid_winner_seat = move.bidWinner;
       session.current_bid = move.winningBid;
       session.bid_marks = move.winningMarks;
-      
+
       // If WE are the bid winner, show trump selection UI
       if (move.bidWinner === mpSeat) {
         _guestShowTrumpSelection(move.winningBid);
