@@ -1209,7 +1209,7 @@ async function mpHandleDeal(move) {
   mpSuppressSend = true;
   mpGameStarted = true;
   _staleRefreshCount = 0; // V10_118: Reset refresh counter for new hand
-  mpShowChatIcon(true); // V11.4: Show chat icon when game starts
+  if (typeof mpShowChatIcon === 'function') mpShowChatIcon(true); // V11.4: Show chat icon when game starts
 
   // Close multiplayer modal if open
   document.getElementById('mpBackdrop').style.display = 'none';
@@ -1248,8 +1248,12 @@ async function mpHandleDeal(move) {
   // Set dealer
   session.dealer = move.dealer;
 
-  // Set hands from host data
-  const hands = move.hands;
+  // Set hands from server deal — server only sends our hand
+  // Build hands array with our hand in our seat, empty arrays for others
+  const hands = [];
+  for (let i = 0; i < playerCount; i++) {
+    hands.push(i === mpSeat ? (move.hand || move.hands || []) : []);
+  }
   session.game.set_hands(hands, 0);
   session.game.set_trump_suit(null);
   session.game.set_active_players(Array.from({length: playerCount}, (_, i) => i));
