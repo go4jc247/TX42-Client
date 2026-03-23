@@ -3996,8 +3996,9 @@ function mpIsAI(seat) {
 // Stubs for observer.js (lazy-loaded)
 // ============================================================
 // Observer mode stubs — lazy loaded from observer.js
-function mpRequestRoomStatus(r,c) { _lazyLoad("./assets/js/observer.js", function(){ mpRequestRoomStatus(r,c); }); }
-function mpConnectAsObserver(r) { _lazyLoad("./assets/js/observer.js", function(){ mpConnectAsObserver(r); }); }
+// TX42-Client: No observer mode — mpConnectAsObserver is no-op
+// NOTE: mpRequestRoomStatus is defined at line 863 — do NOT override it here
+function mpConnectAsObserver(r) { /* no-op — observer mode not supported */ }
 function mpHandleObserverMessage(m) { /* no-op until observer loaded */ }
 function mpShowObserverControls() { /* no-op until observer loaded */ }
 
