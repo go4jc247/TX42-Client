@@ -1238,7 +1238,6 @@ async function mpHandleDeal(move) {
   // Set hands from server deal — server only sends our hand
   // Build hands array: our real hand + dummy face-down tiles for opponents
   const myHand = move.hand || move.hands || [];
-  const handSize = mpHandSize();
   const hands = [];
   for (let i = 0; i < playerCount; i++) {
     if (i === mpSeat) {
