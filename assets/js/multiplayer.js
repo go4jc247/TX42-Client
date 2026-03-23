@@ -2274,14 +2274,22 @@ async function mpHandlePlayConfirmed(move) {
   isAnimating = true;
   const isLead = move.isLead;
 
-  // V25: Safety timeout — if animation hangs, force-unlock and advance game
+  // V25: Safety timeout — if animation hangs, force-unlock, drain queue, advance
   const _animTimeout = setTimeout(() => {
     if (isAnimating) {
       console.warn('[MP-HA] Guest animation timeout — forcing unlock (seat', move.seat, ')');
       isAnimating = false;
+      // Drain queued plays
+      while (_mpPlayQueue.length > 0) {
+        const nextPlay = _mpPlayQueue.shift();
+        // Process synchronously — update game state without animation
+        const np = nextPlay.nextPlayer;
+        if (np !== undefined && np !== null) session.game.current_player = np;
+        console.log('[MP-HA] Drained queued play: seat', nextPlay.seat, 'next', np);
+      }
       mpCheckWhoseTurn();
     }
-  }, 10000);
+  }, 3000);
 
   if (spriteIdx >= 0) {
     try { await playDomino(move.seat, spriteIdx, isLead, null, null); } catch(e) { console.warn('[MP-HA] Guest playDomino error:', e); }
