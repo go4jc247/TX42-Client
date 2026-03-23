@@ -525,30 +525,17 @@ function mpHandleMessage(msg) {
       // Host dealt - receive hands
       mpHandleDeal(move);
       break;
-    // ═══ V10_121: PURE HOST AUTHORITY — Intent messages (guest→host) ═══
+    // ═══ TX42-Client: Intent messages — server handles all validation ═══
+    // Intents are sent TO the server, not processed by client
     case 'play_intent':
-      if (mpIsHost) mpHandlePlayIntent(move);
-      break;
     case 'bid_intent':
-      if (mpIsHost) mpHandleBidIntent(move);
-      break;
     case 'pass_intent':
-      if (mpIsHost) mpHandlePassIntent(move);
-      break;
     case 'trump_intent':
-      if (mpIsHost) mpHandleTrumpIntent(move);
-      break;
     case 'widow_swap_intent':
-      if (mpIsHost) mpHandleWidowSwapIntent(move);
-      break;
     case 'call_double_intent':
-      if (mpIsHost) mpHandleCallDoubleIntent(move);
-      break;
     case 'nello_intent':
-      if (mpIsHost) mpHandleNelloIntent(move);
-      break;
     case 'nello_doubles_intent':
-      if (mpIsHost) mpHandleNelloDoublesIntent(move);
+      // Server processes these — client ignores
       break;
     case 'call_double_request':
       // Host asks guest bid winner to decide on Call for Double
@@ -1249,10 +1236,19 @@ async function mpHandleDeal(move) {
   session.dealer = move.dealer;
 
   // Set hands from server deal — server only sends our hand
-  // Build hands array with our hand in our seat, empty arrays for others
+  // Build hands array: our real hand + dummy face-down tiles for opponents
+  const myHand = move.hand || move.hands || [];
+  const handSize = mpHandSize();
   const hands = [];
   for (let i = 0; i < playerCount; i++) {
-    hands.push(i === mpSeat ? (move.hand || move.hands || []) : []);
+    if (i === mpSeat) {
+      hands.push(myHand);
+    } else {
+      // Dummy tiles so renderer draws face-down dominoes for opponents
+      const dummy = [];
+      for (let j = 0; j < handSize; j++) dummy.push([-1, -1]);
+      hands.push(dummy);
+    }
   }
   session.game.set_hands(hands, 0);
   session.game.set_trump_suit(null);
