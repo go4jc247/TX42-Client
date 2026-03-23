@@ -1929,8 +1929,8 @@
 
 /* Chat bubbles above players */
 .chatBubble {
-  position: absolute;
-  background: rgba(0,0,0,0.8);
+  position: fixed;
+  background: rgba(0,0,0,0.85);
   color: #fff;
   padding: 6px 10px;
   border-radius: 10px;
@@ -1942,7 +1942,7 @@
   pointer-events: none;
 }
 @keyframes bubbleFade {
-  0% { opacity: 1; transform: translateY(0); }
-  70% { opacity: 1; transform: translateY(-5px); }
-  100% { opacity: 0; transform: translateY(-15px); }
+  0% { opacity: 1; transform: translate(-50%, -100%) translateY(0px); }
+  70% { opacity: 1; transform: translate(-50%, -100%) translateY(-5px); }
+  100% { opacity: 0; transform: translate(-50%, -100%) translateY(-15px); }
 }

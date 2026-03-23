@@ -959,7 +959,7 @@ async function mpHandlePlayConfirmed(move) {
         // Animate to played position
         if (targetPos) {
           const isLead = move.isLead;
-          await animateSprite(newSprite, { x: targetPos.x, y: targetPos.y, s: targetPos.s, rz: targetPos.rz, ry: 180 }, 350);
+          await animateSprite(newSprite, { x: targetPos.x, y: targetPos.y, s: targetPos.s, rz: targetPos.rz, ry: 0 }, 350);
           SFX.playDomino();
           if (isLead) showLeadDomino(tile);
           // Track in playedThisTrick for collectToHistory
@@ -1886,7 +1886,6 @@ function mpShowChatBubble(seat, text) {
   const rect = indicator.getBoundingClientRect();
   bubble.style.left = (rect.left + rect.width / 2) + 'px';
   bubble.style.top = (rect.top - 10) + 'px';
-  bubble.style.transform = 'translate(-50%, -100%)';
   document.body.appendChild(bubble);
 
   // Remove after animation completes (4s)
