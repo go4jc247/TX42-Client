@@ -11,7 +11,7 @@ function mpPlayerCount(){ return 4; } // TX42-Client: always 4 players
 function mpMaxPip(){ return 6; }     // TX42-Client: double-6 set
 function mpHandSize(){ return 7; }   // TX42-Client: 7 tiles per hand
 const MP_WS_URL = 'wss://tx42-server.onrender.com';  // TX42-Client: new server
-const MP_VERSION = 'v21-TX42';  // TX42-Client version
+const MP_VERSION = 'v25-TX42';  // TX42-Client version
 
 // ═══════════════════════════════════════════════════════════════
 // V10_FIX: Multiplayer Sync Fix Variables
@@ -1346,14 +1346,15 @@ async function mpHandleDeal(move) {
 
   createPlaceholders();
 
-  // Create sprites - rotate display so local player (mpSeat) is at bottom (position 1)
+  // V25: Create sprites - rotate display so local player (mpSeat) is at bottom (position 1)
+  let _spriteCount = 0;
   for (let p = 0; p < playerCount; p++) {
     sprites[p] = [];
     // Map game seat to visual position: local player -> P1 (bottom)
     const visualP = mpVisualPlayer(p);
     for (let h = 0; h < handSize; h++) {
       const tile = hands[p][h];
-      if (!tile) continue;
+      if (!tile) { console.warn('[MP-Deal] No tile at seat', p, 'slot', h); continue; }
 
       const sprite = makeSprite(tile);
       const pos = getHandPosition(visualP, h);
@@ -1364,6 +1365,7 @@ async function mpHandleDeal(move) {
 
         const data = { sprite, tile, originalSlot: h };
         sprites[p][h] = data;
+        _spriteCount++;
 
         // Only allow clicks for local player's seat
         if (p === mpSeat) {
@@ -1381,9 +1383,12 @@ async function mpHandleDeal(move) {
         } else {
           sprite.setFaceUp(false);
         }
+      } else {
+        console.warn('[MP-Deal] No position for seat', p, 'visual', visualP, 'slot', h);
       }
     }
   }
+  console.log('[MP-Deal] Created', _spriteCount, 'sprites for', playerCount, 'players ×', handSize, 'tiles');
 
   // Auto deal: flip local player's tiles face-up
   for (const data of (sprites[mpSeat] || [])) {
@@ -2268,8 +2273,21 @@ async function mpHandlePlayConfirmed(move) {
 
   isAnimating = true;
   const isLead = move.isLead;
+
+  // V25: Safety timeout — if animation hangs, force-unlock and advance game
+  const _animTimeout = setTimeout(() => {
+    if (isAnimating) {
+      console.warn('[MP-HA] Guest animation timeout — forcing unlock (seat', move.seat, ')');
+      isAnimating = false;
+      mpCheckWhoseTurn();
+    }
+  }, 10000);
+
   if (spriteIdx >= 0) {
     try { await playDomino(move.seat, spriteIdx, isLead, null, null); } catch(e) { console.warn('[MP-HA] Guest playDomino error:', e); }
+  } else if (!isLocalSeat) {
+    // V25: Sprite not found for opponent — skip animation, just update played state
+    console.warn('[MP-HA] No sprite for opponent seat', move.seat, '— skipping animation');
   }
 
   // Handle trick completion
@@ -2324,11 +2342,13 @@ async function mpHandlePlayConfirmed(move) {
       // V10_121g: Show hand end popup for guests (includes game end check)
       setTimeout(() => mpShowHandEnd(), 800);
       isAnimating = false;
+      clearTimeout(_animTimeout);
       return;
     }
   }
 
   isAnimating = false;
+  clearTimeout(_animTimeout);
 
   // Process queued plays
   if (_mpPlayQueue.length > 0) {

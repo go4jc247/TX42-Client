@@ -10473,11 +10473,14 @@ if (_mpBackdropOrig) {
   }).observe(_mpBackdropOrig, { attributes: true, attributeFilter: ['style'] });
 }
 
-// V10_119: Wire up auto-refresh disable toggle
-document.getElementById('mpDisableRefreshChk').addEventListener('change', function() {
-  _staleRefreshDisabled = this.checked;
-  console.log('[MP] Auto-refresh disabled:', _staleRefreshDisabled);
-});
+// V10_119: Wire up auto-refresh disable toggle (V25: null-guard — element may not exist)
+const _drChkEl = document.getElementById('mpDisableRefreshChk');
+if (_drChkEl) {
+  _drChkEl.addEventListener('change', function() {
+    _staleRefreshDisabled = this.checked;
+    console.log('[MP] Auto-refresh disabled:', _staleRefreshDisabled);
+  });
+}
 
 document.getElementById('mpConnect').addEventListener('click', () => {
   if (!mpRoom) {
