@@ -4,75 +4,8 @@
 // Based on TX-Dom-Dev v13.3.0
 // ============================================================
 
-// TX42-Client safety: Patch getElementById to avoid null.addEventListener crashes
-// Many elements from the original game (start screen, pass&play, etc.) are removed
-(function(){
-  var _origGetById = document.getElementById.bind(document);
-  var _nullProxy = new Proxy({}, {
-    get: function(target, prop){
-      if(prop === 'addEventListener' || prop === 'removeEventListener'){
-        return function(){};
-      }
-      if(prop === 'style') return {};
-      if(prop === 'classList') return { add:function(){}, remove:function(){}, toggle:function(){}, contains:function(){return false;} };
-      if(prop === 'querySelectorAll') return function(){ return []; };
-      if(prop === 'querySelector') return function(){ return null; };
-      if(prop === 'innerHTML' || prop === 'textContent' || prop === 'innerText') return '';
-      if(prop === 'value') return '';
-      if(prop === 'checked') return false;
-      if(prop === 'dataset') return {};
-      if(prop === 'children') return [];
-      if(prop === 'parentNode' || prop === 'parentElement') return null;
-      if(typeof prop === 'string' && prop.startsWith('offset')) return 0;
-      return undefined;
-    },
-    set: function(target, prop, value){ return true; }
-  });
-  // Elements that exist in our HTML - use real getElementById
-  var _existingIds = new Set([
-    'viewportWrapper','gameWrapper','topbar','topRow','team1Pill','team1Score','team1Fill',
-    'team2Pill','team2Score','team2Fill','marksPill','tallyCanvas1','tallyCanvas2',
-    'playerNameDisplay','tableMain','trickHistoryBg','boneyard2Container','boneyard2Canvas',
-    'boneyard2Toggle','playerIndicator1','playerIndicator2','playerIndicator3','playerIndicator4',
-    'shadowLayer','spriteLayer','statusBar','trumpDisplay','trumpDisplayCanvas','trumpDisplayValue',
-    'settingsBtn','settingsMenu','menuNewHand','menuHint','menuBones','menuNotes','menuGameLog',
-    'menuSoundSettings','soundSettingsPanel','animSpeedSlider','animSpeedVal','sfxIcon','sfxVolume',
-    'bgmIcon','bgmVolume','bgmTrackList','menuHome','menuChangeName','menuAbout','menuClaudeChat',
-    'aboutBackdrop','aboutCloseBtn','aboutVersion','claudeChatBackdrop','claudeChatCloseBtn',
-    'claudeChatStatus','claudeChatMessages','claudeChatInput','claudeChatSendBtn',
-    'bonesBackdrop','bonesCanvas','notesBackdrop','notesCloseBtn','notesTextarea','notesCopyBtn','notesClearBtn',
-    'gameLogBackdrop','gameLogCloseBtn','gameLogContent','gameLogCopyBtn',
-    'mpIndicator','mpIndicatorDetails','mpStatusText','mpPlayerCount','mpDot',
-    'mpBackdrop','mpCloseBtn','mpConnStatus','mpRoomSection','mpRoomGrid',
-    'mpSeatSection','mpSeatGrid','mpPlayerList','mpPlayers',
-    'mpHostSettings','mpMarksSection','mpHouseRules',
-    'mpChkCallForDouble','mpChkNelloDeclare','mpChkNelloRestrict','mpChkChat',
-    'mpConnect','mpDisconnect',
-    'callDoubleBtnGroup','btnCallDouble','btnPlayRegular',
-    'callDoubleBanner','callDoubleBannerBtn',
-    'yourTurnBanner',
-    'nelloDoublesBackdrop','btnNelloRegular','btnNelloDoublesOnly',
-    'dfmChoiceBackdrop','btnDfmYes','btnDfmNo',
-    'mpWaiting','mpWaitText','mpWaitSub',
-    'syncingOverlay',
-    'bidBackdrop','bidHeaderText','bidValueDisplay','bidHintDisplay','bidRangeSlider',
-    'bidPassNotch','bid2xNotch','btnBidConfirm','btnNello',
-    'trumpBackdrop','trumpCentralDisplay','trumpCentralCanvas','trumpCentralLabel',
-    'trumpSlider','trumpSpecialOptions','trumpDoublesBtn','trumpNTBtn','trumpNelloBtn','btnTrumpConfirm',
-    'mpChatIcon','mpChatPanel','mpChatCloseBtn','mpChatMessages','mpChatInput','mpChatInputField','mpChatSendBtn',
-    'layDownBackdrop','layDownPanel','layDownTiles','layDownActions','btnAcceptLayDown','btnContestLayDown',
-    'nameEntryBackdrop','nameInput','nameConfirmBtn'
-  ]);
-  document.getElementById = function(id){
-    var el = _origGetById(id);
-    if(el) return el;
-    // Return null proxy for missing elements to avoid crashes
-    if(!_existingIds.has(id)){
-      return _nullProxy;
-    }
-    return null;
-  };
-})();
+// TX42-Client safety: No getElementById proxy — just use native behavior
+// Missing elements will return null; code must handle nulls naturally
 
 const GAME_VERSION = 'v1.0.0-TX42'; // TX42-Client version
 
