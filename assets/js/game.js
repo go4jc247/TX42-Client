@@ -4,16 +4,30 @@
 // Based on TX-Dom-Dev v13.3.0
 // ============================================================
 
-// TX42-Client safety: Make getElementById null-safe for chained calls
-// Returns null for missing elements (preserves conditional checks)
-// but wraps the global scope in a try-catch-ignore for .addEventListener on null
+// TX42-Client safety: Return stub only for missing elements, track stubs to preserve conditionals
+// Elements that exist in HTML return normally. Missing elements return a stub that has
+// addEventListener/style/etc but evaluates as truthy (unavoidable).
+// Critical: elements used in `if(el)` conditional checks that MUST return null are listed below.
 (function(){
-  window.addEventListener('error', function(evt){
-    if(evt.error && evt.error.message && evt.error.message.includes("Cannot read properties of null")){
-      evt.preventDefault(); // Swallow null reference errors from stripped UI elements
-      return true;
-    }
-  });
+  var _origGetById = document.getElementById.bind(document);
+  var _stub = document.createElement('div');
+  _stub.style.display = 'none';
+  _stub._isStub = true;
+  // Elements where code does `if(el)` and we need null (not stub) when missing
+  var _mustBeNull = new Set([
+    'splashScreen','startScreenBackdrop','gameSelectScreen','gameSettingsBackdrop',
+    'startScreen','modeSelect','ppBackdrop','ppModal',
+    'monteCarloPanel','aiLogPanel','mcProgress',
+    'mpObserverPanel','observerPanel',
+    'handEndBackdrop','nelloBackdrop','nelloOpponentBackdrop',
+    'passPlayBackdrop','ppActivePlayer'
+  ]);
+  document.getElementById = function(id){
+    var el = _origGetById(id);
+    if(el) return el;
+    if(_mustBeNull.has(id)) return null;
+    return _stub;
+  };
 })();
 
 const GAME_VERSION = 'v1.0.0-TX42'; // TX42-Client version
