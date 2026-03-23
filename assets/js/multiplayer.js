@@ -2193,9 +2193,52 @@ async function mpHandlePlayConfirmed(move) {
 
   _mpLastActivityTime = Date.now();
 
+  const isLocalSeat = (move.seat === mpSeat);
+
+  // V28: For ALL non-local plays, fast-forward game state instantly (no animation)
+  if (!isLocalSeat) {
+    // Update current_player
+    if (move.nextPlayer !== undefined && move.nextPlayer !== null) session.game.current_player = move.nextPlayer;
+    // Remove dummy tile from opponent hand
+    if (session.game.hands[move.seat]) session.game.hands[move.seat].pop();
+    // Handle trick completion
+    if (move.trickComplete) {
+      session.game.trick_number = (session.game.trick_number || 0) + 1;
+      if (move.trickWinner !== undefined) session.game.current_player = move.trickWinner;
+      session.game.current_trick = [];
+      if (move.teamPoints) {
+        session.game.team_points = move.teamPoints;
+        team1Score = move.teamPoints[0]; team2Score = move.teamPoints[1];
+        updateScoreDisplay();
+      }
+    }
+    // Handle hand completion
+    if (move.handComplete && move.handResult) {
+      session.game.team_points = move.handResult.teamPoints || [0,0];
+      session.team_marks = move.handResult.teamMarks || [0,0];
+      team1Score = session.game.team_points[0]; team2Score = session.game.team_points[1];
+      team1Marks = session.team_marks[0]; team2Marks = session.team_marks[1];
+      session.status = move.handResult.status || 'Hand over';
+      setStatus(session.status);
+      updateScoreDisplay();
+      setTimeout(() => mpShowHandEnd(), 800);
+      // Don't process queue — wait for next deal
+      return;
+    }
+    // Process queue or check whose turn
+    if (_mpPlayQueue.length > 0) {
+      const nextPlay = _mpPlayQueue.shift();
+      mpHandlePlayConfirmed(nextPlay);
+    } else {
+      mpCheckWhoseTurn();
+    }
+    return;
+  }
+
+  // ── LOCAL PLAYER PATH (animation) ──
+
   // Update guest's local session state (read-only updates)
   // Remove tile from hand
-  const isLocalSeat = (move.seat === mpSeat);
   const hand = session.game.hands[move.seat] || [];
   let gameHandIndex = -1;
   for (let i = 0; i < hand.length; i++) {
