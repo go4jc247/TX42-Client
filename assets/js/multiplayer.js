@@ -1197,9 +1197,9 @@ function mpRenderPlayerList(players) {
   }
 }
 
-// Handle deal from host
+// Handle deal from server
 async function mpHandleDeal(move) {
-  if (mpIsHost) return;  // Host already dealt locally
+  // TX42-Client: Server always deals — don't skip for host
   if (mpSeat < 0) {
     console.error('[MP] Received deal but mpSeat not set! Ignoring.');
     return;
