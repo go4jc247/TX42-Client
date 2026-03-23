@@ -891,6 +891,10 @@ async function mpHandlePlayConfirmed(move) {
 
   // ── REMOTE PLAYER: Fast-forward state, no animation ──
   if (!isLocalSeat) {
+    // Track the play in current_trick so follow-suit logic works
+    if (move.tile) {
+      session.game.current_trick.push([move.seat, [move.tile[0], move.tile[1]]]);
+    }
     if (move.nextPlayer !== undefined && move.nextPlayer !== null) {
       session.game.current_player = move.nextPlayer;
     }
