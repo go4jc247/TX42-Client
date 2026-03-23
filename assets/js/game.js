@@ -12445,6 +12445,7 @@ document.getElementById('btnNelloDoublesOnly').addEventListener('click', () => {
 
   // Wait for DOM to be ready, then set up
   function onReady(){
+    try {
     hideAllScreens();
 
     // Prompt for name if not set
@@ -12490,6 +12491,13 @@ document.getElementById('btnNelloDoublesOnly').addEventListener('click', () => {
     if(pnd && playerName){
       pnd.textContent = playerName;
       pnd.style.display = 'block';
+    }
+    } catch(err) {
+      console.error('[TX42-Client] Init error:', err);
+      document.title = 'ERROR: ' + err.message;
+      // Force show lobby anyway
+      var mpb = document.getElementById('mpBackdrop');
+      if(mpb) mpb.style.display = 'flex';
     }
   }
 
