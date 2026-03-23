@@ -643,6 +643,9 @@ function mpHandleMessage(msg) {
         mpHandleStateSync(move);
       }
       break;
+    case 'game_over':
+      mpHandleGameOver(move);
+      break;
     case 'rematch_invite':
       // Host is inviting players to play again
       if (!mpIsHost) {
@@ -687,6 +690,30 @@ function mpHandleMessage(msg) {
     default:
       console.log('[MP] Unknown move action:', move.action);
   }
+}
+
+function mpHandleGameOver(move) {
+  console.log('[MP] Game over!', move);
+  const teamMarks = move.teamMarks || [0, 0];
+  const myTeam = mpSeat % 2;
+  const won = teamMarks[myTeam] >= 7;
+
+  // Update session marks
+  if (session) {
+    session.team_marks = teamMarks;
+  }
+
+  // Show game end summary
+  if (typeof showGameEndSummary === 'function') {
+    showGameEndSummary(won);
+  } else {
+    // Fallback alert
+    const msg = won ? 'Your team wins! ' : 'You lost! ';
+    setStatus(msg + 'Team 1: ' + teamMarks[0] + ' marks, Team 2: ' + teamMarks[1] + ' marks');
+  }
+
+  // Reset game state for potential new game
+  mpGameStarted = false;
 }
 
 // Send a raw message (bypasses move wrapping)
@@ -2780,13 +2807,12 @@ function mpHandleTrumpConfirmed(move) {
       }
     }
     session.game.leader = move.seat;
-    session.game.current_player = move.firstPlayer || move.seat;
+    session.game.current_player = move.firstPlayer || move.currentPlayer || move.seat;
     session.phase = PHASE_PLAYING;
   } else {
     session.set_trump(trumpValue);
-    if (move.firstPlayer !== undefined) {
-      session.game.current_player = move.firstPlayer;
-    }
+    session.game.leader = move.seat;
+    session.game.current_player = move.firstPlayer || move.currentPlayer || move.seat;
   }
 
   syncSpritesWithGameState();

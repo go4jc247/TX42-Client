@@ -1,5 +1,5 @@
 // TX42-Client Service Worker — Cache-first for offline support
-const CACHE_NAME = 'tx42-client-v22';
+const CACHE_NAME = 'tx42-client-v23';
 const ASSETS = [
   './',
   './index.html',
