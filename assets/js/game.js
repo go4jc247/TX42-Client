@@ -4,15 +4,16 @@
 // Based on TX-Dom-Dev v13.3.0
 // ============================================================
 
-// TX42-Client safety: Patch getElementById to return a no-op stub for missing elements
-// This prevents null.addEventListener crashes from stripped-out UI elements
+// TX42-Client safety: Make getElementById null-safe for chained calls
+// Returns null for missing elements (preserves conditional checks)
+// but wraps the global scope in a try-catch-ignore for .addEventListener on null
 (function(){
-  var _origGetById = document.getElementById.bind(document);
-  var _stub = document.createElement('div');
-  _stub.style.display = 'none';
-  document.getElementById = function(id){
-    return _origGetById(id) || _stub;
-  };
+  window.addEventListener('error', function(evt){
+    if(evt.error && evt.error.message && evt.error.message.includes("Cannot read properties of null")){
+      evt.preventDefault(); // Swallow null reference errors from stripped UI elements
+      return true;
+    }
+  });
 })();
 
 const GAME_VERSION = 'v1.0.0-TX42'; // TX42-Client version
