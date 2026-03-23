@@ -889,7 +889,7 @@ async function mpHandlePlayConfirmed(move) {
   _mpLastActivityTime = Date.now();
   const isLocalSeat = (move.seat === mpSeat);
 
-  // ── REMOTE PLAYER: Fast-forward state, no animation ──
+  // ── REMOTE PLAYER: Animate tile to center ──
   if (!isLocalSeat) {
     // Track the play in current_trick so follow-suit logic works
     if (move.tile) {
@@ -901,33 +901,120 @@ async function mpHandlePlayConfirmed(move) {
     // Remove a dummy tile from opponent hand
     if (session.game.hands[move.seat]) session.game.hands[move.seat].pop();
 
-    // Remove an opponent sprite
+    // Remove one face-down sprite from opponent's hand
     const opSprites = sprites[move.seat] || [];
+    let removedSlot = -1;
     for (let i = 0; i < opSprites.length; i++) {
       if (opSprites[i] !== null) {
-        const sd = opSprites[i];
-        if (sd.sprite) { if (sd.sprite._shadow) sd.sprite._shadow.remove(); sd.sprite.remove(); }
-        opSprites[i] = null;
+        removedSlot = i;
         break;
       }
     }
 
+    // Create a real sprite with the played tile and animate it
+    isAnimating = true;
+    const _remoteAnimTimeout = setTimeout(() => {
+      if (isAnimating) {
+        console.warn('[MP] Remote animation timeout — forcing unlock');
+        isAnimating = false;
+        if (_mpPlayQueue.length > 0) mpHandlePlayConfirmed(_mpPlayQueue.shift());
+        else mpCheckWhoseTurn();
+      }
+    }, 3000);
+
+    try {
+      if (move.tile && typeof makeSprite === 'function') {
+        const tile = [move.tile[0], move.tile[1]];
+        const newSprite = makeSprite(tile);
+        const sprLayer = document.getElementById('spriteLayer');
+        const shLayer = document.getElementById('shadowLayer');
+        if (sprLayer) sprLayer.appendChild(newSprite);
+        if (shLayer && newSprite._shadow) shLayer.appendChild(newSprite._shadow);
+
+        // Get the opponent's hand start position
+        const visualP = mpVisualPlayer(move.seat);
+        const startPos = (removedSlot >= 0) ? getHandPosition(visualP, removedSlot) : null;
+        const targetPos = getPlayedPosition(visualP);
+
+        // Remove the old face-down sprite now
+        if (removedSlot >= 0 && opSprites[removedSlot]) {
+          const sd = opSprites[removedSlot];
+          if (sd.sprite) { if (sd.sprite._shadow) sd.sprite._shadow.remove(); sd.sprite.remove(); }
+          opSprites[removedSlot] = null;
+        }
+
+        if (startPos) {
+          // Place at opponent hand, face-up
+          newSprite.setPose({ x: startPos.x, y: startPos.y, s: startPos.s, rz: startPos.rz, ry: 180 });
+        } else if (targetPos) {
+          // Fallback: start at target
+          newSprite.setPose({ x: targetPos.x, y: targetPos.y - 40, s: targetPos.s, rz: targetPos.rz, ry: 180 });
+        }
+
+        bringToFront(newSprite);
+
+        // Recenter remaining hand sprites
+        recenterHand(move.seat);
+
+        // Animate to played position
+        if (targetPos) {
+          const isLead = move.isLead;
+          await animateSprite(newSprite, { x: targetPos.x, y: targetPos.y, s: targetPos.s, rz: targetPos.rz, ry: 180 }, 350);
+          SFX.playDomino();
+          if (isLead) showLeadDomino(tile);
+          // Track in playedThisTrick for collectToHistory
+          playedThisTrick.push({ sprite: newSprite, seat: move.seat, tile: tile });
+          updateWinningHighlight();
+        }
+      } else {
+        // Fallback: just remove the sprite silently
+        if (removedSlot >= 0 && opSprites[removedSlot]) {
+          const sd = opSprites[removedSlot];
+          if (sd.sprite) { if (sd.sprite._shadow) sd.sprite._shadow.remove(); sd.sprite.remove(); }
+          opSprites[removedSlot] = null;
+        }
+      }
+    } catch (e) {
+      console.warn('[MP] Remote play animation error:', e);
+    }
+
+    // Handle trick completion
     if (move.trickComplete) {
-      session.game.trick_number = (session.game.trick_number || 0) + 1;
-      if (move.trickWinner !== undefined) session.game.current_player = move.trickWinner;
-      session.game.current_trick = [];
+      // Update tricks_team for boneyard tracking
+      if (move.trickWinner !== null && move.trickWinner !== undefined) {
+        const winTeam = session.game.team_of(move.trickWinner);
+        if (!session.game.tricks_team[winTeam]) session.game.tricks_team[winTeam] = [];
+        const trickRecord = [];
+        for (const play of session.game.current_trick) trickRecord[play[0]] = play[1];
+        session.game.tricks_team[winTeam].push(trickRecord);
+      }
+
       if (move.teamPoints) {
         session.game.team_points = move.teamPoints;
         team1Score = move.teamPoints[0]; team2Score = move.teamPoints[1];
-        updateScoreDisplay();
       }
+
+      session.game.trick_number = (session.game.trick_number || 0) + 1;
+      if (move.trickWinner !== undefined) session.game.current_player = move.trickWinner;
+
+      await new Promise(r => setTimeout(r, 800));
+      await collectToHistory();
+      session.game.current_trick = [];
+      updateScoreDisplay();
+      playedThisTrick = [];
+      currentTrick++;
     }
 
     if (move.handComplete && move.handResult) {
       _applyHandResult(move.handResult);
+      isAnimating = false;
+      clearTimeout(_remoteAnimTimeout);
       setTimeout(() => mpShowHandEnd(), 800);
       return;
     }
+
+    isAnimating = false;
+    clearTimeout(_remoteAnimTimeout);
 
     // Process queue or advance
     if (_mpPlayQueue.length > 0) {
@@ -1774,6 +1861,36 @@ function mpHandleChat(msg) {
   if (badge && panel && panel.style.display === 'none') {
     badge.style.display = '';
   }
+  // Show chat bubble above player
+  mpShowChatBubble(msg.seat, msg.text || '');
+}
+
+function mpShowChatBubble(seat, text) {
+  if (seat === undefined || seat === null || !text) return;
+  // Map seat to visual player number (1-4)
+  let visualP;
+  try { visualP = mpVisualPlayer(seat); } catch (e) { return; }
+  const indicator = document.getElementById('playerIndicator' + visualP);
+  if (!indicator) return;
+
+  // Remove any existing bubble for this player
+  const existing = document.querySelector('.chatBubble[data-seat="' + seat + '"]');
+  if (existing) existing.remove();
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chatBubble';
+  bubble.dataset.seat = seat;
+  bubble.textContent = text;
+
+  // Position above the player indicator
+  const rect = indicator.getBoundingClientRect();
+  bubble.style.left = (rect.left + rect.width / 2) + 'px';
+  bubble.style.top = (rect.top - 10) + 'px';
+  bubble.style.transform = 'translate(-50%, -100%)';
+  document.body.appendChild(bubble);
+
+  // Remove after animation completes (4s)
+  setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 4200);
 }
 
 function mpHandleChatClear() {

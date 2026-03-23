@@ -1926,3 +1926,23 @@
 }
 .claude-chat-send-btn:hover { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
 .claude-chat-send-btn:active { transform: scale(0.97); }
+
+/* Chat bubbles above players */
+.chatBubble {
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  max-width: 150px;
+  text-align: center;
+  z-index: 1000;
+  animation: bubbleFade 4s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes bubbleFade {
+  0% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; transform: translateY(-5px); }
+  100% { opacity: 0; transform: translateY(-15px); }
+}
