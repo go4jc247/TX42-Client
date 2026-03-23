@@ -10513,7 +10513,9 @@ document.getElementById('mpStartGame').addEventListener('click', () => {
   mpGamesWon = 0;
   mpGamesLost = 0;
   mpGamesPlayed = 0;
-  if (!mpIsHost) return;
+  // TX42-Client: seat 0 is the host (room leader) — server handles the game
+  if (mpSeat !== 0) return;
+  mpIsHost = true; // Set host flag for UI purposes
   mpGameStarted = true;
   MULTIPLAYER_MODE = true;
 
@@ -10567,8 +10569,8 @@ document.getElementById('mpStartGame').addEventListener('click', () => {
   const startScreen = document.getElementById('startScreenBackdrop');
   if (startScreen) startScreen.style.display = 'none';
 
-  // Start the game - host deals
-  mpHostDeal();
+  // TX42-Client: Server handles dealing — just wait for deal message
+  console.log('[TX42] Start game sent to server, waiting for deal...');
 });
 
 // MP marks selection buttons
