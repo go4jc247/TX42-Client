@@ -4,8 +4,16 @@
 // Based on TX-Dom-Dev v13.3.0
 // ============================================================
 
-// TX42-Client safety: No getElementById proxy — just use native behavior
-// Missing elements will return null; code must handle nulls naturally
+// TX42-Client safety: Patch getElementById to return a no-op stub for missing elements
+// This prevents null.addEventListener crashes from stripped-out UI elements
+(function(){
+  var _origGetById = document.getElementById.bind(document);
+  var _stub = document.createElement('div');
+  _stub.style.display = 'none';
+  document.getElementById = function(id){
+    return _origGetById(id) || _stub;
+  };
+})();
 
 const GAME_VERSION = 'v1.0.0-TX42'; // TX42-Client version
 
@@ -4385,9 +4393,11 @@ function setupAINello(bidderSeat, marks = 1){
   updateTrumpDisplay();
 }
 
-// Set up Nello button handlers
-document.getElementById('btnNelloConfirm').addEventListener('click', confirmNelloOpponent);
-document.getElementById('btnNelloCancel').addEventListener('click', cancelNelloOpponent);
+// Set up Nello button handlers (may not exist in stripped-down client)
+var _btnNelloConfirm = document.getElementById('btnNelloConfirm');
+var _btnNelloCancel = document.getElementById('btnNelloCancel');
+if (_btnNelloConfirm) _btnNelloConfirm.addEventListener('click', confirmNelloOpponent);
+if (_btnNelloCancel) _btnNelloCancel.addEventListener('click', cancelNelloOpponent);
 
 // Show the trump display square
 function updateTrumpDisplay(){
