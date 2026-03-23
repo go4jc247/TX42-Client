@@ -7092,8 +7092,8 @@ async function handlePlayer1Click(spriteSlotIndexOrElement){
     return;
   }
 
-  // ═══ V10_121: GUEST PATH — Send intent, lift tile, wait for host confirmation ═══
-  if (MULTIPLAYER_MODE && !mpIsHost) {
+  // ═══ TX42-Client: All players send intent to server ═══
+  if (MULTIPLAYER_MODE) {
     console.log('[MP-HA] Guest sending play intent:', clickedTile);
     waitingForPlayer1 = false;
     disablePlayer1Clicks();
@@ -8354,8 +8354,8 @@ function humanBid(bidAmount, marks = 1) {
     return false;
   }
 
-  // V10_121: Guest sends intent to host instead of modifying biddingState
-  if (MULTIPLAYER_MODE && !mpIsHost) {
+  // TX42-Client: All players send intent to server
+  if (MULTIPLAYER_MODE) {
     const bidPayload = { action: 'bid_intent', seat: currentBidder, bid: actualBid, marks: marks, multiplier: biddingState.inMultiplierMode ? biddingState.highMultiplier : 0 };
     if (isMoonShoot) bidPayload.moonShoot = true;
     if (window._nelloDeclared) {
@@ -8431,16 +8431,16 @@ function humanPass() {
   const currentBidder = biddingState.currentBidder;
   if (!ppIsHuman(currentBidder)) return false;
 
-  // V10_121: Guest sends intent to host
-  if (MULTIPLAYER_MODE && !mpIsHost) {
+  // TX42-Client: All players send intent to server
+  if (MULTIPLAYER_MODE) {
     mpSendMove({ action: 'pass_intent', seat: currentBidder });
     showBidOverlay(false);
     setStatus('Waiting for confirmation...');
-    _startIntentTimeout('pass'); // V11.3: Timeout if host is unreachable
+    _startIntentTimeout('pass');
     return true;
   }
 
-  // V10_121: Host or single-player path — process locally
+  // Single-player path — process locally
   biddingState.passCount++;
   biddingState.bids.push({ seat: currentBidder, playerNumber: seatToPlayer(currentBidder), bid: "pass" });
 
@@ -9088,8 +9088,8 @@ function confirmTrumpSelection(){
   }
   _dfmChoiceMade = false; // Reset for next hand
 
-  // V10_121: Guest sends trump intent to host instead of calling set_trump
-  if (MULTIPLAYER_MODE && !mpIsHost) {
+  // TX42-Client: All players send intent to server
+  if (MULTIPLAYER_MODE) {
     disableTrumpDominoClicks();
     clearTrumpHighlights();
     document.getElementById('trumpBackdrop').style.display = 'none';
