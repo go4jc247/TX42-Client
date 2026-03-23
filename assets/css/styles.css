@@ -1,0 +1,1928 @@
+/* ============================================================
+ * TX-Dom-Dev — Main Stylesheet
+ * Extracted from index.html v13.2.0
+ * ============================================================ */
+
+  :root{
+    --feltA:#1a8f37; --feltB:#0f6e2a; --feltC:#0a4f1d;
+    --text: rgba(255,255,255,0.95);
+    --ar-w: 414;
+    --ar-h: 896;
+    --tileW: 56px;
+    --tileH: 112px;
+    --r: 12px;
+    --c_edgeFill: #d7d7d7;
+    --s_edgeStroke: rgba(224,224,224,1);
+
+    /* Screen size detection variables - set by JS */
+    --screen-scale: 1;
+    --screen-type: 'default';
+  }
+
+  html,body{
+    height:100%; margin:0; overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text);
+    /* V10_122c: iOS Safari touch optimizations */
+    -webkit-tap-highlight-color: transparent; /* Remove iOS tap highlight */
+    -webkit-touch-callout: none; /* Disable iOS callout menu on long press */
+    touch-action: manipulation; /* Disable double-tap zoom, enable fast clicks */
+    user-select: none; /* Prevent text selection on touch */
+    -webkit-user-select: none;
+    overscroll-behavior: none; /* Prevent iOS rubber band scrolling */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  }
+
+  /* V12.3: Viewport wrapper — fills screen, black letterbox background */
+  #viewportWrapper{
+    position:fixed;
+    inset:0;
+    background: var(--feltC, #0a4f1d);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+  /* V12.3: Game wrapper — aspect-ratio-constrained container for ALL game elements */
+  #gameWrapper{
+    position:relative;
+    width: min(100vw, calc(100vh * var(--ar-w) / var(--ar-h)));
+    height: min(100vh, calc(100vw * var(--ar-h) / var(--ar-w)));
+    overflow:hidden;
+  }
+  #tableMain{
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.08) 45%, rgba(0,0,0,0.32) 100%),
+      radial-gradient(circle at 50% 35%, var(--feltA) 0%, var(--feltB) 55%, var(--feltC) 100%);
+    overflow:hidden;
+  }
+
+  /* Shadow layer sits below sprite layer so shadows don't cast on other dominoes */
+  /* Trick history darkened background - creates indentation effect */
+  #trickHistoryBg{
+    position:absolute;
+    /* TRICK HISTORY AREA CONTROLS */
+    --th-left: 5%;
+    --th-top: 16%;
+    --th-width: 90%;
+    --th-height: 22%;
+    left: var(--th-left);
+    top: var(--th-top);
+    width: var(--th-width);
+    height: var(--th-height);
+    background: rgba(0,0,0,0.25);
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  /* Boneyard 2 — inline overlay on trick history (shares --th-* positioning) */
+  #boneyard2Container{
+    position:absolute;
+    left: var(--th-left, 5%);
+    top: var(--th-top, 16%);
+    width: var(--th-width, 90%);
+    pointer-events: none;
+    z-index: 6;
+    display: none;
+  }
+  #boneyard2Canvas{
+    width: 100%;
+    display: block;
+  }
+  #boneyard2Toggle{
+    position:absolute;
+    right: 0.5%;
+    top: 16%;
+    width: 18px;
+    z-index: 7;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 3px 2px;
+  }
+  #boneyard2Toggle:hover{ opacity: 0.9; }
+  #boneyard2Toggle.active{ opacity: 0.9; }
+  #boneyard2Toggle .by2Label{
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    color: rgba(255,255,255,0.85);
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  #boneyard2Toggle .by2Arrow{
+    color: rgba(255,255,255,0.7);
+    font-size: 10px;
+    line-height: 1;
+    transition: transform 0.3s;
+  }
+  #boneyard2Toggle.active .by2Arrow{
+    transform: scaleX(-1);
+  }
+    #shadowLayer{position:absolute; inset:0; pointer-events:none; z-index:15;}
+  #spriteLayer{position:absolute; inset:0; pointer-events:none; z-index:20;}
+
+  /* Player team indicators - faint circles near hands */
+  .playerIndicator{
+    position:absolute;
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    font-weight:700;
+    pointer-events:none;
+    z-index:10;
+    opacity:0.5;
+  }
+  .playerIndicator.team1{
+    background:rgba(59,130,246,0.6);
+    border:0px solid rgba(59,130,246,0.5);
+    color:rgba(255,255,255,.9);
+  }
+  .playerIndicator.team2{
+    background:rgba(239,68,68,0.6);
+    border:0px solid rgba(239,68,68,0.5);
+    color:rgba(255,255,255,.9);
+  }
+  .playerIndicator.team3{
+    background:rgba(34,197,94,0.6);
+    border:0px solid rgba(34,197,94,0.5);
+    color:rgba(255,255,255,.9);
+  }
+
+  /* Shadow elements rendered on the shadow layer */
+  .dominoShadow{
+    position:absolute;
+    width: var(--tileW); height: var(--tileH);
+    will-change: transform;
+    pointer-events:none;
+  }
+  .dominoShadow .shadowShape{
+    width:100%; height:100%;
+    border-radius: var(--r);
+    background: rgba(0,0,0,0.28);
+    filter: blur(11px);
+    transform: translateY(10px);
+  }
+  .dominoShadow.hintGlow .shadowShape{
+    background: rgba(255,255,255,0.75);
+    filter: blur(14px);
+    transform: translateY(0px);
+  }
+  /* V10_106: Fix #11 — Hint border outline (replaces glow) */
+  .dominoSprite.hintBorder{
+    outline: var(--hint-thickness, 3px) solid var(--hint-color, #00ff88);
+    outline-offset: var(--hint-offset, 1px);
+    border-radius: var(--r);
+    filter: drop-shadow(0 0 var(--hint-feather, 4px) var(--hint-color, #00ff88));
+  }
+
+  .dominoSprite{
+    position:absolute;
+    width: var(--tileW); height: var(--tileH);
+    will-change: transform;
+    /* Shadows always on green via shadow layer - never on other dominoes */
+  }
+  .dominoSprite.clickable{
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .dominoSprite.clickable:hover{
+    filter: brightness(1.1);
+  }
+  .dominoSprite.winning{
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.8)) drop-shadow(0 0 12px rgba(255,255,255,0.5));
+  }
+  .dominoSprite .stack{
+    position:relative; width:100%; height:100%;
+    transform-style: preserve-3d;
+    border-radius: var(--r); overflow:hidden;
+    pointer-events: none;
+  }
+  .dominoSprite .edgeStrip{
+    position:absolute; top:0; height:100%;
+    background: var(--c_edgeFill);
+    border: 4px solid var(--s_edgeStroke);
+    box-sizing: border-box; z-index:0;
+    transform: translateZ(-2px);
+    backface-visibility: hidden; opacity: 0;
+    pointer-events:none;
+  }
+  .dominoSprite .panel{
+    position:absolute; top:0;
+    width:100%; height:100%;
+    transform-style: preserve-3d;
+    border-radius: var(--r);
+    backface-visibility:hidden;
+    pointer-events: none;
+  }
+  .dominoSprite .face{
+    position:absolute; inset:0;
+    border-radius: var(--r);
+    backface-visibility:hidden;
+    overflow:hidden; background:#fff;
+    pointer-events: none;
+  }
+  .dominoSprite .face.back{ transform: rotateY(180deg); }
+  .dominoSprite canvas{width:100%; height:100%; display:block; border-radius: var(--r); pointer-events: none;}
+
+  /* ==== Top bar with scoring ==== */
+  #topbar{
+    position:absolute;
+    top:0; left:0; right:0;
+    padding: calc(6px + env(safe-area-inset-top)) 10px 6px 10px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.35), rgba(0,0,0,0.10));
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    z-index:100;
+    user-select:none;
+  }
+  #topRow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .pill{
+    padding:6px 10px;
+    border-radius:14px;
+    background: rgba(0,0,0,0.22);
+    border:1px solid rgba(255,255,255,0.14);
+    font-weight:900;
+    font-size:12.5px;
+    letter-spacing:0.2px;
+    color: rgba(255,255,255,0.85);
+    white-space:nowrap;
+  }
+  .scorePill{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    min-width: 92px;
+  }
+  .scoreLabel{
+    font-size: 12px;
+    opacity: 0.9;
+    letter-spacing: 0.4px;
+  }
+  .scoreValue{
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.05;
+    margin-top: 2px;
+  }
+  .scoreBar{
+    width: 100%;
+    height: 7px;
+    border-radius: 999px;
+    margin-top: 6px;
+    background: rgba(255,255,255,0.10);
+    overflow: hidden;
+  }
+  .scoreFill{
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: rgba(59,130,246,0.85);
+    transition: width 0.3s ease;
+  }
+  #team2Fill{ background: rgba(239,68,68,0.85); }
+
+  /* Marks pill with tally marks */
+  .marksPill{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding: 8px 24px;
+    min-width: 140px;
+  }
+  .marksLabel{
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.8;
+    margin-bottom: 4px;
+    letter-spacing: 0.6px;
+  }
+  .marksDisplay{
+    display:flex;
+    gap: 16px;
+  }
+  .tallyGroup{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 2px;
+  }
+  .tallyTeamLabel{
+    font-size: 9px;
+    opacity: 0.6;
+    letter-spacing: 0.3px;
+  }
+  .tallyCanvas{
+    /* Canvas for hand-drawn tally marks */
+  }
+
+  #statusBar{
+    position:fixed;
+    top:81px; left:50%;
+    transform:translateX(-50%);
+    z-index:100;
+    background:rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding:2px 8px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+    text-align:center;
+    /* STATUS BAR CONTROLS - Easy to adjust */
+    --status-max-width: 98%;  /* Maximum width of status bar */
+    --status-max-lines: 2;    /* Maximum lines before truncation */
+    max-width: var(--status-max-width);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: var(--status-max-lines);
+    -webkit-box-orient: vertical;
+    line-height: 1;
+  }
+  #statusBar:empty{ display: none; }
+
+  /* Placeholder boxes for played dominoes and lead */
+  .placeholder{
+    position:absolute;
+    background:rgba(0,0,0,0.10);
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+    z-index:1;
+  }
+  .placeholder .text{
+    color:rgba(255,255,255,0.4);
+    font-weight:900;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  .placeholder.lead-placeholder{
+    /* Square placeholder for lead pip */
+  }
+  .placeholder.lead-placeholder .text{
+    color:rgba(200,180,140,0.6);
+  }
+
+  /* Bid display in placeholders */
+  .placeholder.player-placeholder .text{
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .placeholder.player-placeholder.bid-active .text{
+    color: #4ade80;
+    font-size: 12px;
+    animation: bidPop 0.3s ease-out;
+  }
+  .placeholder.player-placeholder.bid-pass .text{
+    color: rgba(255,255,255,0.5);
+    font-size: 10px;
+    animation: bidPop 0.3s ease-out;
+  }
+  .placeholder.player-placeholder.bid-winner .text{
+    color: #fbbf24;
+    font-size: 13px;
+    font-weight: 900;
+  }
+  @keyframes bidPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Lead pip square display - faded square perimeter when empty, bright when showing pip */
+  /* Lead pip square — perimeter is permanently drawn; ONLY the pip canvas changes */
+  .leadPipSquare{
+    position:absolute;
+    background:transparent;
+    border-radius:6px;
+    border:3px solid rgba(255,255,255,0.4); /* constant perimeter */
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    transition:none; /* nothing about the perimeter animates */
+  }
+
+  /* Hide pip when empty */
+  .leadPipSquare.empty canvas{
+    opacity:0;
+  }
+
+  /* If you use a fading class, fade ONLY the pip */
+  .leadPipSquare.fading canvas{
+    opacity:0;
+  }
+
+  /* Canvas fades in/out */
+  .leadPipSquare canvas{
+    border-radius:4px;
+    transition: opacity 0.25s ease-out;
+  }
+
+  /* Label: fixed color, no transitions, no state changes */
+  .leadPipSquare .leadLabel{
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:0.4px;
+    color:rgba(255,255,255,0.5);
+    margin-bottom:2px;
+    transition:none;
+  }
+
+  /* Disable any trump glow or border effects entirely */
+  .leadPipSquare.trump{
+    box-shadow:none;
+  }
+  .leadPipSquare.trump .leadLabel{
+    color:rgba(255,255,255,0.5);
+  }
+
+  /* Next Round Button - positioned above lead pip */
+  .nextRoundBtn{
+    position:fixed;
+    left:50%;
+    top:55%;
+    transform:translateX(-50%);
+    padding:12px 24px;
+    font-size:16px;
+    font-weight:700;
+    color:#fff;
+    background:linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border:none;
+    border-radius:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    cursor:pointer;
+    z-index:1000;
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .nextRoundBtn:hover{
+    transform:translateX(-50%) scale(1.05);
+    box-shadow:0 6px 16px rgba(0,0,0,0.4);
+  }
+  .nextRoundBtn:active{
+    transform:translateX(-50%) scale(0.98);
+  }
+
+  /* ==== Modal/Overlay System ==== */
+  .modalBackdrop{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.0);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+  }
+
+  /* Bid and Trump overlays positioned over trick history area */
+  #bidBackdrop, #trumpBackdrop{
+    /* Position over trick history area so player can see their dominoes */
+    align-items: flex-start;
+    padding-top: 8%; /* V12.10.27c: % of gameWrapper height */
+  }
+  #bidBackdrop .modalPanel, #trumpBackdrop .modalPanel{
+    max-height: 40%; /* V12.10.27c: % of gameWrapper height */
+    overflow-y: auto;
+  }
+
+  /* Trump backdrop allows clicks through to dominoes (for domino-based trump selection) */
+  #trumpBackdrop{
+    /* Make backdrop semi-transparent but allow pointer events through to dominoes */
+    background: linear-gradient(to bottom,
+      rgba(0,0,0,0.0) 0%,
+      rgba(0,0,0,0.0) 45%,
+      rgba(0,0,0,0.0) 60%,
+      rgba(0,0,0,0.0) 100%);
+    pointer-events: none;  /* Allow clicks through to dominoes below */
+  }
+  #trumpBackdrop .modalPanel{
+    pointer-events: auto;  /* But capture clicks on the modal panel itself */
+  }
+
+  /* Bid backdrop also allows clicks through for preview sorting */
+  #bidBackdrop{
+    pointer-events: none;  /* Allow clicks through to dominoes below */
+    background: transparent;  /* No dark overlay during bidding */
+  }
+  #bidBackdrop .modalPanel{
+    pointer-events: auto;  /* But capture clicks on the modal panel itself */
+  }
+
+  /* End of hand popup positioned in center play area */
+  #handEndBackdrop{
+    /* Position in the domino play area (center of screen) */
+    align-items: center;
+    justify-content: center;
+  }
+  .modalPanel{
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius:16px;
+    padding:0;
+    min-width:auto;
+    max-width:95%;
+    width:95%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-sizing: border-box;
+  }
+  .modalHeader{
+    padding:8px 12px;
+    font-size:14px;
+    font-weight:900;
+    border-bottom:1px solid rgba(255,255,255,0.15);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .modalBody{
+    padding:12px;
+  }
+  .modalFooter{
+    padding:8px 12px;
+    border-top:1px solid rgba(255,255,255,0.15);
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  /* Glossy Buttons */
+  .glossBtn{
+    padding:10px 18px;
+    border-radius:10px;
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    color:#fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .glossBtn:hover{ transform:translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3); }
+  .glossBtn:active{ transform:translateY(1px); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .glossBtn:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
+
+  .glossGreen{ background: linear-gradient(to bottom, #4ade80, #22c55e); }
+  .glossBlue{ background: linear-gradient(to bottom, #60a5fa, #3b82f6); }
+  .glossRed{ background: linear-gradient(to bottom, #f87171, #ef4444); }
+  .glossAmber{ background: linear-gradient(to bottom, #fbbf24, #f59e0b); }
+  .glossGray{ background: linear-gradient(to bottom, #9ca3af, #6b7280); }
+
+  /* ==== V12.10.8: Splash Screen ==== */
+  #splashScreen{
+    position:fixed;
+    left:0;top:0;width:100%;height:100%;
+    z-index:9999;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background: var(--screenBg, linear-gradient(180deg, #1a4fc4 0%, #153da0 40%, #0f2d7a 100%));
+  }
+  #splashScreen img{
+    width:min(70vw, 300px);
+    height:auto;
+    position:relative;
+    z-index:1;
+    filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+  }
+  @keyframes splashFadeIn{
+    from{opacity:0;transform:scale(0.9);}
+    to{opacity:1;transform:scale(1);}
+  }
+  #splashLoadingWrap{
+    margin-top:30px;
+    text-align:center;
+  }
+  #splashLoadingText{
+    color:rgba(255,255,255,0.7);
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:2px;
+    margin-bottom:10px;
+  }
+  #splashLoadingBar{
+    width:200px;
+    height:4px;
+    background:rgba(255,255,255,0.15);
+    border-radius:4px;
+    overflow:hidden;
+    margin:0 auto;
+  }
+  #splashLoadingFill{
+    width:0%;
+    height:100%;
+    background:linear-gradient(90deg, #60a5fa, #93c5fd, #bfdbfe);
+    border-radius:4px;
+    transition: width 0.3s ease;
+  }
+  @keyframes splashFadeOut{
+    from{opacity:1;}
+    to{opacity:0;}
+  }
+
+  /* ==== Start Screen (V12.10.11 customizable blue) ==== */
+  #startScreenBackdrop{
+    position:fixed !important;
+    left:0 !important;
+    top:0 !important;
+    width:100vw !important;
+    height:100vh !important;
+    z-index:1100 !important;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+  }
+  #startScreenBackdrop::before{
+    content:none;
+  }
+  @media (min-width:768px){
+    .startScreenPanel{ gap:36px; padding:50px 40px;     position:relative;
+    z-index:1;
+  }
+    #homeHeroWrap img{ width:min(60vw, 420px) !important; }
+    #homeButtonsWrap{ max-width:420px !important; }
+    #homeButtonsWrap button{ font-size:22px !important; padding:18px 40px !important; }
+  }
+  .startScreenPanel{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    padding:40px 30px;
+    max-height:100vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    width:100%;
+  }
+  /* V12.10.13: Hero image with circular mask + light burst */
+  #homeHeroWrap{
+    position:relative;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:visible;
+  }
+  #lightBurst{
+    position:absolute;
+    width:250vmax;
+    height:250vmax;
+    top:35%;
+    left:50%;
+    margin-top:-125vmax;
+    margin-left:-125vmax;
+    border-radius:50%;
+    background: conic-gradient(
+      from 0deg,
+      rgba(255,255,255,0.18) 0deg, transparent 5deg,
+      transparent 12deg, rgba(255,255,255,0.10) 15deg, transparent 22deg,
+      transparent 28deg, rgba(255,255,255,0.22) 30deg, transparent 42deg,
+      transparent 48deg, rgba(255,255,255,0.06) 50deg, transparent 54deg,
+      transparent 60deg, rgba(255,255,255,0.14) 63deg, transparent 70deg,
+      transparent 78deg, rgba(255,255,255,0.08) 80deg, transparent 85deg,
+      transparent 93deg, rgba(255,255,255,0.16) 96deg, transparent 106deg,
+      transparent 110deg,
+      rgba(255,255,255,0.04) 113deg, transparent 118deg,
+      transparent 122deg, transparent 238deg,
+      rgba(255,255,255,0.04) 242deg, transparent 248deg,
+      transparent 254deg, rgba(255,255,255,0.16) 258deg, transparent 268deg,
+      transparent 275deg, rgba(255,255,255,0.08) 278deg, transparent 283deg,
+      transparent 290deg, rgba(255,255,255,0.14) 293deg, transparent 300deg,
+      transparent 306deg, rgba(255,255,255,0.06) 308deg, transparent 312deg,
+      transparent 318deg, rgba(255,255,255,0.22) 320deg, transparent 332deg,
+      transparent 338deg, rgba(255,255,255,0.10) 341deg, transparent 348deg,
+      transparent 354deg, rgba(255,255,255,0.18) 357deg, transparent 360deg
+    );
+    mask-image: radial-gradient(circle, transparent 3%, black 8%, black 100%);
+    -webkit-mask-image: radial-gradient(circle, transparent 3%, black 8%, black 100%);
+    pointer-events:none;
+    z-index:0;
+    opacity:0;
+    transition:opacity 0.4s ease;
+    animation: burstSway 10s ease-in-out infinite;
+  }
+  #lightBurst.active{
+    opacity:1;
+  }
+  @keyframes burstSway{
+    0%{transform:rotate(-6deg);}
+    50%{transform:rotate(6deg);}
+    100%{transform:rotate(-6deg);}
+  }
+  @keyframes burstRotate{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(360deg);}
+  }
+  #homeHeroWrap img{
+    width:min(75vw, 300px);
+    height:auto;
+    display:block;
+    position:relative;
+    z-index:1;
+    /* V12.10.14: transparent image, no mask needed */
+  }
+  #homeButtonsWrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    width:100%;
+    max-width:320px;
+  }
+  /* V12.10.11: Color picker toggle */
+  #colorPickerToggle{
+    position:fixed;
+    top:12px;right:12px;
+    z-index:1150;
+    width:36px;height:36px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.15);
+    border:1px solid rgba(255,255,255,0.25);
+    color:#fff;
+    font-size:18px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+  }
+  #colorPickerToggle:hover{
+    background:rgba(255,255,255,0.25);
+  }
+  #colorPickerPanel{
+    position:fixed;
+    top:56px;right:12px;
+    z-index:1150;
+    background:rgba(15,20,40,0.92);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:14px;
+    padding:16px;
+    color:#fff;
+    font-size:13px;
+    display:none;
+    width:220px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  }
+  .cpRow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .cpRow label{
+    font-weight:600;
+    font-size:12px;
+    color:rgba(255,255,255,0.7);
+  }
+  .cpRow input[type="color"]{
+    width:40px;height:28px;
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:6px;
+    background:transparent;
+    cursor:pointer;
+    padding:0;
+  }
+  .cpRow input[type="range"]{
+    width:120px;
+    accent-color:#60a5fa;
+  }
+  #cpSpreadVal{
+    font-size:11px;
+    color:rgba(255,255,255,0.5);
+    min-width:28px;
+    text-align:right;
+  }
+  .startScreenTitle{
+    font-size:36px;
+    font-weight:900;
+    text-shadow: 0 3px 12px rgba(0,0,0,0.5);
+    letter-spacing: 2px;
+  }
+  .startScreenButtons{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .startScreenBtn{
+    min-width:200px;
+    padding:16px 32px;
+    font-size:18px;
+  }
+  /* V12.10.27cb: Game Select — logo-only swipe, bg/burst color-fade */
+  #gameSelectScreen{
+    position:fixed;
+    left:0;top:0;width:100%;height:100%;
+    z-index:1200;
+    display:none;
+    flex-direction:column;
+    color:#fff;
+    overflow:hidden;
+    user-select:none;
+    -webkit-user-select:none;
+    transition:background 0.5s ease;
+  }
+  /* Fixed burst behind everything */
+  #gsBurst{
+    position:absolute;
+    width:250vmax;height:250vmax;
+    border-radius:50%;
+    background: conic-gradient(
+      from 0deg,
+      rgba(255,255,255,0.18) 0deg, transparent 5deg,
+      transparent 12deg, rgba(255,255,255,0.10) 15deg, transparent 22deg,
+      transparent 28deg, rgba(255,255,255,0.22) 30deg, transparent 42deg,
+      transparent 48deg, rgba(255,255,255,0.06) 50deg, transparent 54deg,
+      transparent 60deg, rgba(255,255,255,0.14) 63deg, transparent 70deg,
+      transparent 78deg, rgba(255,255,255,0.08) 80deg, transparent 85deg,
+      transparent 93deg, rgba(255,255,255,0.16) 96deg, transparent 106deg,
+      transparent 110deg,
+      rgba(255,255,255,0.04) 113deg, transparent 118deg,
+      transparent 122deg, transparent 238deg,
+      rgba(255,255,255,0.04) 242deg, transparent 248deg,
+      transparent 254deg, rgba(255,255,255,0.16) 258deg, transparent 268deg,
+      transparent 275deg, rgba(255,255,255,0.08) 278deg, transparent 283deg,
+      transparent 290deg, rgba(255,255,255,0.14) 293deg, transparent 300deg,
+      transparent 306deg, rgba(255,255,255,0.06) 308deg, transparent 312deg,
+      transparent 318deg, rgba(255,255,255,0.22) 320deg, transparent 332deg,
+      transparent 338deg, rgba(255,255,255,0.10) 341deg, transparent 348deg,
+      transparent 354deg, rgba(255,255,255,0.18) 357deg, transparent 360deg
+    );
+    mask-image: radial-gradient(circle, transparent 3%, black 8%, black 100%);
+    -webkit-mask-image: radial-gradient(circle, transparent 3%, black 8%, black 100%);
+    pointer-events:none;
+    z-index:0;
+    transition:opacity 0.5s ease;
+    animation: burstSway 10s ease-in-out infinite;
+  }
+  /* Logo swipe area */
+  #gsLogoArea{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    z-index:1;
+  }
+  #gsLogoTrack{
+    display:flex;
+    align-items:center;
+    height:100%;
+    transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    will-change:transform;
+  }
+  .gsLogoSlide{
+    flex:0 0 100vw;
+    width:100vw;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    box-sizing:border-box;
+    padding:0 40px;
+  }
+  .gsSlideImg{
+    height:auto;
+    position:relative;
+    z-index:1;
+    filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+    transition:width 0.3s ease;
+  }
+  .gsSlideTitle{
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:0.5px;
+    text-shadow:0 2px 8px rgba(0,0,0,0.5);
+    position:relative;
+    z-index:1;
+  }
+  .gsSlideDesc{
+    font-size:13px;
+    color:rgba(255,255,255,0.6);
+    position:relative;
+    z-index:1;
+    margin-top:-4px;
+  }
+  /* Dots */
+  #gsDots{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    padding:8px 0 4px 0;
+    z-index:2;
+  }
+  .gsDot{
+    width:10px;height:10px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.3);
+    border:none;
+    cursor:pointer;
+    transition:all 0.3s;
+    padding:0;
+  }
+  .gsDot.active{
+    background:#fff;
+    transform:scale(1.2);
+    box-shadow:0 0 8px rgba(255,255,255,0.5);
+  }
+  /* Arrows */
+  .gsArrow{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    z-index:10;
+    width:40px;height:40px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.2);
+    color:#fff;
+    font-size:20px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background 0.2s;
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+  }
+  .gsArrow:hover{background:rgba(255,255,255,0.25);}
+  .gsArrow:active{transform:translateY(-50%) scale(0.92);}
+  #gsArrowLeft{left:10px;}
+  #gsArrowRight{right:10px;}
+  /* Bottom bar */
+  #gsBottomBar{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    padding:8px 24px 20px 24px;
+    z-index:2;
+  }
+  #gsPlayBtn{
+    padding:14px 56px;
+    font-size:18px;
+    font-weight:700;
+    color:#fff;
+    border:none;
+    border-radius:14px;
+    cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,0.3);
+    transition:transform 0.15s ease, background 0.5s ease;
+    letter-spacing:1px;
+  }
+  #gsPlayBtn:active{transform:scale(0.96);}
+  #gsBackBtn{
+    padding:8px 20px;
+    font-size:13px;
+    font-weight:600;
+    color:rgba(255,255,255,0.5);
+    background:transparent;
+    border:none;
+    cursor:pointer;
+  }
+  /* Per-game color picker */
+  #gsColorPickerToggle{
+    position:fixed;
+    bottom:110px;
+    right:16px;
+    z-index:1201;
+    width:44px;height:44px;
+    border-radius:50%;
+    background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,255,255,0.2);
+    color:#fff;
+    font-size:22px;
+    cursor:pointer;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+  }
+  #gsColorPickerPanel{
+    position:fixed;
+    bottom:160px;
+    right:16px;
+    z-index:1201;
+    width:220px;
+    background:rgba(15,15,30,0.95);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:14px;
+    padding:14px;
+    display:none;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    color:#fff;
+    max-height:60vh;
+    overflow-y:auto;
+  }
+  #gsColorPickerPanel .cpRow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:6px;
+    font-size:12px;
+  }
+  #gsColorPickerPanel .cpRow label{
+    flex:1;
+    color:rgba(255,255,255,0.7);
+  }
+  #gsColorPickerPanel .cpRow input[type="color"]{
+    width:32px;height:24px;border:none;border-radius:4px;cursor:pointer;background:transparent;
+  }
+  #gsColorPickerPanel .cpRow input[type="range"]{
+    flex:2;height:4px;accent-color:#3b82f6;
+  }
+  #gsColorPickerPanel .cpRow span{
+    font-size:10px;color:rgba(255,255,255,0.4);min-width:28px;text-align:right;
+  }
+
+  /* ==== Bidding Slider ==== */
+  .bidSliderWrap{
+    margin:20px 0;
+    padding:0 10px;
+  }
+  .bidSliderContainer{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:30px 0 20px 0;
+  }
+  .bidEndNotch{
+    padding:8px 12px;
+    background:rgba(255,255,255,0.15);
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:700;
+    font-size:13px;
+    transition: all 0.2s;
+    white-space:nowrap;
+  }
+  .bidEndNotch:hover{ background:rgba(255,255,255,0.25); }
+  .bidEndNotch.active{ background:#4ade80; color:#000; }
+  .bidRangeWrap{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .bidRangeSlider{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:8px;
+    background:rgba(255,255,255,0.3);
+    border-radius:4px;
+    outline:none;
+    cursor:pointer;
+  }
+  .bidRangeSlider::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:24px;
+    height:24px;
+    background:#4ade80;
+    border-radius:50%;
+    cursor:pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .bidRangeSlider::-moz-range-thumb{
+    width:24px;
+    height:24px;
+    background:#4ade80;
+    border-radius:50%;
+    cursor:pointer;
+    border:none;
+  }
+  .bidRangeLabels{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    opacity:0.7;
+    margin-top:4px;
+  }
+  .bidCurrentValue{
+    text-align:center;
+    font-size:36px;
+    font-weight:900;
+    margin:10px 0;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  /* ==== Trump Selection - Slider Based UI ==== */
+  .trumpCentralDisplay{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin-bottom:20px;
+  }
+  .trumpCentralDisplay canvas{
+    background:#f5f5f5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .trumpCentralLabel{
+    margin-top:8px;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+  }
+  .trumpSliderWrap{
+    margin:10px 20px 20px 20px;
+  }
+  .trumpSlider{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:10px;
+    background:rgba(255,255,255,0.3);
+    border-radius:5px;
+    outline:none;
+    cursor:pointer;
+  }
+  .trumpSlider::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:28px;
+    height:28px;
+    background:#4ade80;
+    border-radius:50%;
+    cursor:pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .trumpSlider::-moz-range-thumb{
+    width:28px;
+    height:28px;
+    background:#4ade80;
+    border-radius:50%;
+    cursor:pointer;
+    border:none;
+  }
+  .trumpSliderLabels{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    opacity:0.7;
+    margin-top:4px;
+    padding:0 4px;
+  }
+  .trumpSpecialOptions{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin-bottom:10px;
+  }
+  .trumpSpecialBtn{
+    padding:10px 16px;
+    background:rgba(255,255,255,0.15);
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:13px;
+    transition: all 0.2s;
+  }
+  .trumpSpecialBtn:hover{ background:rgba(255,255,255,0.25); }
+  .trumpSpecialBtn.selected{ background:#4ade80; color:#000; }
+
+  /* ==== Trump Selection Grid (legacy fallback) ==== */
+  .trumpGrid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:12px;
+    margin:10px 0;
+  }
+  .trumpOption{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:12px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.1);
+    border:2px solid transparent;
+    cursor:pointer;
+    transition: all 0.2s;
+  }
+  .trumpOption:hover{ background:rgba(255,255,255,0.2); }
+  .trumpOption.selected{ border-color:#4ade80; background:rgba(74,222,128,0.2); }
+  .trumpOption.disabled{ opacity:0.4; cursor:not-allowed; }
+  .trumpPip{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    font-weight:900;
+    margin-bottom:6px;
+  }
+
+  /* Nel-O opponent selection grid */
+  .nelloOpponentGrid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:12px;
+    margin:10px 0;
+  }
+  .nelloOpponent{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:14px 10px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.1);
+    border:2px solid transparent;
+    cursor:pointer;
+    transition: all 0.2s;
+  }
+  .nelloOpponent:hover{ background:rgba(255,255,255,0.2); }
+  .nelloOpponent.selected{ border-color:#4ade80; background:rgba(74,222,128,0.2); }
+  .nelloOpponentNum{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px;
+    font-weight:900;
+    margin-bottom:6px;
+    background:rgba(239,68,68,0.3);
+    border:2px solid rgba(239,68,68,0.6);
+  }
+  .nelloOpponentLabel{
+    font-size:11px;
+    font-weight:600;
+    opacity:0.85;
+  }
+
+  /* End of Hand Popup */
+  .handEndResult{
+    text-align:center;
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:16px;
+    padding:12px;
+    border-radius:10px;
+    background:rgba(255,255,255,0.1);
+  }
+  .handEndResult.success{
+    background:rgba(74,222,128,0.2);
+    color:#4ade80;
+  }
+  .handEndResult.failure{
+    background:rgba(239,68,68,0.2);
+    color:#f87171;
+  }
+  .handEndStats{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
+    margin-top:12px;
+  }
+  .handEndStat{
+    background:rgba(255,255,255,0.08);
+    border-radius:8px;
+    padding:10px;
+    text-align:center;
+  }
+  .handEndStatLabel{
+    font-size:10px;
+    font-weight:700;
+    opacity:0.7;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin-bottom:4px;
+  }
+  .handEndStatValue{
+    font-size:20px;
+    font-weight:900;
+  }
+  .handEndStatValue.team1{ color:#60a5fa; }
+  .handEndStatValue.team2{ color:#f87171; }
+
+  .trumpLabel{
+    font-size:11px;
+    font-weight:600;
+    opacity:0.85;
+  }
+
+  /* ==== Trump Display Square ==== */
+  .trumpDisplaySquare{
+    position:fixed;
+    /* TRUMP DISPLAY POSITION CONTROLS - adjust these values to move the indicator */
+    --trump-display-top: calc(70px + env(safe-area-inset-top));
+    --trump-display-left: 10px;
+    top: var(--trump-display-top);
+    left: var(--trump-display-left);
+    width:40px;
+    height:40px;
+    background:#fff;
+    border-radius:8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index:50;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    font-weight:900;
+  }
+  .trumpDisplaySquare.visible{ display:flex; }
+  .trumpDisplaySquare canvas{
+    border-radius:4px;
+  }
+  .trumpDisplaySquare .trumpValue{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+  }
+
+  /* ==== Settings Menu ==== */
+  .settingsBtn{
+    position:fixed;
+    top:calc(80px + env(safe-area-inset-top));
+    right:10px;
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,255,255,0.2);
+    color:#fff;
+    font-size:18px;
+    cursor:pointer;
+    z-index:1200;  /* Above modal backdrops */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .settingsBtn:hover{ background:rgba(0,0,0,0.6); }
+
+  .settingsMenu{
+    position:fixed;
+    top:calc(50px + env(safe-area-inset-top));
+    right:10px;
+    background:rgba(0,0,0,0.85);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:12px;
+    padding:8px 0;
+    min-width:160px;
+    z-index:1201;  /* Above modal backdrops */
+    display:none;
+  }
+  .settingsMenu.open{ display:block; }
+  .settingsItem{
+    padding:10px 16px;
+    cursor:pointer;
+    font-size:14px;
+    transition: background 0.15s;
+  }
+  .settingsItem:hover{ background:rgba(255,255,255,0.1); }
+  .bgmModeBtn:hover{ opacity:0.8; }
+  #bgmTrackList::-webkit-scrollbar{ width:4px; }
+  #bgmTrackList::-webkit-scrollbar-thumb{ background:#555;border-radius:2px; }
+  .modalCloseBtn{
+    position:absolute;
+    top:10px;
+    right:10px;
+    width:30px;
+    height:30px;
+    border:none;
+    background:rgba(255,255,255,0.1);
+    border-radius:50%;
+    color:#fff;
+    font-size:20px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .modalCloseBtn:hover{ background:rgba(255,255,255,0.2); }
+  .settingsDivider{
+    height:1px;
+    background:rgba(255,255,255,0.15);
+    margin:6px 0;
+  }
+/* ── Lay Down Hand ── */
+#layDownBackdrop {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 9000;
+  justify-content: center;
+  align-items: center;
+}
+#layDownPanel {
+  background: #1a1a2e;
+  border: 2px solid #00deff;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  color: #eee;
+}
+#layDownPanel h3 {
+  margin: 0 0 10px;
+  color: #00deff;
+  font-size: 1.2em;
+}
+#layDownTiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.layDownTile {
+  background: #2a2a4a;
+  border: 1px solid #00deff;
+  border-radius: 6px;
+  padding: 4px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+.layDownTile.trump { border-color: #ff6b6b; color: #ff6b6b; }
+#layDownActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+}
+#layDownActions button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1em;
+  cursor: pointer;
+  font-weight: bold;
+}
+#btnAcceptLayDown {
+  background: #28a745;
+  color: #fff;
+}
+#btnContestLayDown {
+  background: #dc3545;
+  color: #fff;
+}
+/* Call for Double button bar (bid winner) */
+#callDoubleBtnGroup {
+  display: none;
+  position: fixed;
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 810;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+#btnCallDouble {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.9em;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(96,165,250,0.4);
+  animation: callDoublePulse 2s infinite;
+  white-space: nowrap;
+}
+#btnPlayRegular {
+  background: rgba(255,255,255,0.15);
+  color: #ccc;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#btnPlayRegular:hover {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+}
+@keyframes callDoublePulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(96,165,250,0.4); }
+  50% { box-shadow: 0 2px 16px rgba(96,165,250,0.8); }
+}
+/* V11.4: Your Turn banner pulse */
+@keyframes yourTurnPulse {
+  0%, 100% { box-shadow: 0 2px 12px rgba(96,165,250,0.5); transform: scale(1); }
+  50% { box-shadow: 0 4px 20px rgba(96,165,250,0.8); transform: scale(1.05); }
+}
+/* V11.4: In-game chat */
+#mpChatIcon {
+  display:none; position:fixed; bottom:12%; left:8px; z-index:900;
+  width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#60a5fa,#3b82f6);
+  color:#fff; border:none; cursor:pointer; font-size:18px; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+  align-items:center; justify-content:center;
+}
+#mpChatIcon .chat-badge {
+  display:none; position:absolute; top:-4px; right:-4px; width:16px; height:16px;
+  background:#ef4444; border-radius:50%; font-size:9px; color:#fff;
+  line-height:16px; text-align:center; font-weight:bold;
+}
+#mpChatPanel {
+  display:none; position:fixed; bottom:calc(12% + 46px); left:8px; z-index:901;
+  width:260px; max-height:300px; background:rgba(15,25,35,0.95); border-radius:12px;
+  border:1px solid rgba(255,255,255,0.15); box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  font-family:system-ui,-apple-system,sans-serif; flex-direction:column;
+  /* V11.4: Keep chat above keyboard without moving anything else */
+  transition: bottom 0.2s ease;
+}
+#mpChatPanel .chat-header {
+  display:flex; justify-content:space-between; align-items:center; padding:8px 12px;
+  border-bottom:1px solid rgba(255,255,255,0.1); font-size:13px; font-weight:600; color:#60a5fa;
+}
+#mpChatPanel .chat-header button {
+  background:none; border:none; color:#aaa; font-size:16px; cursor:pointer; padding:0 2px;
+}
+#mpChatMessages {
+  flex:1; overflow-y:auto; padding:8px; min-height:100px; max-height:200px;
+  font-size:12px; color:#ddd; line-height:1.4;
+}
+#mpChatMessages .chat-msg { margin-bottom:6px; }
+#mpChatMessages .chat-msg .chat-name { font-weight:600; color:#60a5fa; margin-right:4px; }
+#mpChatMessages .chat-msg.chat-self .chat-name { color:#22c55e; }
+#mpChatInput {
+  display:flex; padding:6px; border-top:1px solid rgba(255,255,255,0.1); gap:4px;
+}
+#mpChatInput input {
+  flex:1; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+  border-radius:6px; padding:6px 8px; color:#fff; font-size:12px; outline:none;
+}
+#mpChatInput button {
+  background:linear-gradient(135deg,#60a5fa,#3b82f6); border:none; border-radius:6px;
+  padding:6px 10px; color:#fff; font-size:12px; font-weight:600; cursor:pointer;
+}
+/* CALLED FOR DOUBLE banner (other players see this) */
+#callDoubleBanner {
+  display: none;
+  position: fixed;
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 810;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+#callDoubleBannerBtn {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.9em;
+  font-weight: bold;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(96,165,250,0.4);
+}
+#callDoubleBanner.clickable #callDoubleBannerBtn {
+  cursor: pointer;
+  animation: callDoublePulse 2s infinite;
+}
+#callDoubleBanner:not(.clickable) #callDoubleBannerBtn {
+  cursor: default;
+  opacity: 0.9;
+}
+/* Blue glow + pulsing white on forced double tile */
+.forcedDouble {
+  animation: forcedDoublePulse 1.5s infinite !important;
+  filter: drop-shadow(0 0 8px rgba(96,165,250,0.8)) drop-shadow(0 0 16px rgba(255,255,255,0.4)) !important;
+}
+@keyframes forcedDoublePulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(96,165,250,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.3)); }
+  50% { filter: drop-shadow(0 0 16px rgba(96,165,250,1)) drop-shadow(0 0 12px rgba(255,255,255,0.7)); }
+}
+#layDownBtnGroup {
+  display: none;
+  position: fixed;
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 800;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+#btnLayDown {
+  background: linear-gradient(135deg, #00deff, #7C3AED);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.9em;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,222,255,0.4);
+  animation: layDownPulse 2s infinite;
+  white-space: nowrap;
+}
+#btnDismissLayDown {
+  background: rgba(255,255,255,0.15);
+  color: #ccc;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#btnDismissLayDown:hover {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+}
+#layDownMinDot {
+  display: none;
+  position: fixed;
+  bottom: 18%;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #00deff, #7C3AED);
+  border-radius: 4px;
+  z-index: 800;
+  cursor: pointer;
+  box-shadow: 0 1px 6px rgba(0,222,255,0.5);
+  animation: minDotPulse 2.5s infinite;
+}
+#layDownTraveler {
+  display: none;
+  position: fixed;
+  z-index: 801;
+  pointer-events: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #00deff, #7C3AED);
+  box-shadow: 0 2px 10px rgba(0,222,255,0.6);
+}
+@keyframes layDownPulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0,222,255,0.4); }
+  50% { box-shadow: 0 2px 16px rgba(0,222,255,0.8); }
+}
+@keyframes minDotPulse {
+  0%, 100% { box-shadow: 0 1px 6px rgba(0,222,255,0.5); }
+  50% { box-shadow: 0 1px 12px rgba(124,58,237,0.8); }
+}
+
+/* V10_FIX4: Syncing overlay spinner animation */
+.syncSpinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: syncSpin 0.8s linear infinite;
+}
+
+@keyframes syncSpin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* ============================================================
+ * Dev Panel Styles
+ * ============================================================ */
+
+.t42s-group { margin-bottom:8px; }
+.t42s-group label { display:block;font-size:11px;color:rgba(255,255,255,0.8);margin-bottom:2px; }
+.t42s-group input[type=range] { width:220px;vertical-align:middle; }
+.t42s-group span { font-size:11px;color:#fff;margin-left:6px; }
+.t42s-section { font-size:12px;font-weight:700;color:#4ecdc4;margin:12px 0 6px 0;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.15); }
+.t42s-section:first-child { margin-top:0; }
+#devTabsWrap { position:fixed; bottom:10px; left:0; right:0; z-index:900; display:none; height:30px; }
+#devTabsArrowL, #devTabsArrowR { position:absolute; top:0; width:24px; height:30px; z-index:901; background:rgba(0,0,0,0.8); color:#fff; border:none; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+#devTabsArrowL { left:0; border-radius:0 6px 6px 0; }
+#devTabsArrowR { right:0; border-radius:6px 0 0 6px; }
+#devTabsArrowL:active, #devTabsArrowR:active { background:rgba(255,255,255,0.3); }
+#devTabsBar { overflow-x:auto; overflow-y:hidden; white-space:nowrap; -webkit-overflow-scrolling:touch; padding:0 28px; scrollbar-width:none; height:30px; }
+#devTabsBar::-webkit-scrollbar { display:none; }
+#devTabsBar button { display:inline-block; background:rgba(0,0,0,0.6); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; margin-right:6px; vertical-align:middle; }
+#devTabsBar button:hover { background:rgba(0,0,0,0.8); }
+#exportAllBtn { color:#0f0 !important; border-color:rgba(0,255,0,0.3) !important; }
+#shuffleSettingsBtn { color:#ff0 !important; border-color:rgba(255,255,0,0.3) !important; }
+
+/* ============================================================
+ * Claude Chat Overlay
+ * ============================================================ */
+.claude-chat-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.claude-chat-container {
+  display: flex;
+  flex-direction: column;
+  width: 95%;
+  max-width: 600px;
+  height: 90%;
+  max-height: 700px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0f0f1a;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(139, 92, 246, 0.15);
+}
+.claude-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #312e81 0%, #4c1d95 100%);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.3);
+  flex-shrink: 0;
+}
+.claude-chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.claude-chat-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #e0d5ff;
+}
+.claude-chat-close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 26px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.claude-chat-close-btn:hover { color: #fff; }
+
+/* Status indicator */
+.claude-chat-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+.claude-chat-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.claude-chat-status-text {
+  color: rgba(255, 255, 255, 0.5);
+}
+.claude-chat-status-connected .claude-chat-status-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.claude-chat-status-connected .claude-chat-status-text { color: #86efac; }
+.claude-chat-status-disconnected .claude-chat-status-dot { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+.claude-chat-status-disconnected .claude-chat-status-text { color: #fca5a5; }
+.claude-chat-status-connecting .claude-chat-status-dot { background: #eab308; box-shadow: 0 0 6px #eab308; animation: ccPulse 1s infinite; }
+.claude-chat-status-connecting .claude-chat-status-text { color: #fde68a; }
+@keyframes ccPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* Messages area */
+.claude-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #0a0a14;
+}
+.claude-chat-messages::-webkit-scrollbar { width: 6px; }
+.claude-chat-messages::-webkit-scrollbar-track { background: transparent; }
+.claude-chat-messages::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 3px; }
+
+/* Message bubbles */
+.claude-chat-msg {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  align-self: flex-start;
+}
+.claude-chat-msg-self {
+  align-self: flex-end;
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+.claude-chat-msg-system {
+  align-self: center;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  max-width: 100%;
+}
+.claude-chat-msg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 3px;
+}
+.claude-chat-msg-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a78bfa;
+}
+.claude-chat-msg-self .claude-chat-msg-name {
+  color: #60a5fa;
+}
+.claude-chat-msg-time {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+}
+.claude-chat-msg-text {
+  font-size: 14px;
+  color: #e2e8f0;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+.claude-chat-msg-text-system {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Input bar */
+.claude-chat-input-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #111127;
+  border-top: 1px solid rgba(167, 139, 250, 0.2);
+  flex-shrink: 0;
+}
+.claude-chat-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(15, 15, 30, 0.8);
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+}
+.claude-chat-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+.claude-chat-input::placeholder { color: rgba(255, 255, 255, 0.25); }
+.claude-chat-send-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.claude-chat-send-btn:hover { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.claude-chat-send-btn:active { transform: scale(0.97); }
