@@ -243,7 +243,7 @@ function mpConnect(roomName) {
     _mpReconnectAttempts = 0; // V10_113: Reset on successful reuse
     mpUpdateStatus('Joining room...', '#f59e0b');
     try {
-      mpSocket.send(JSON.stringify({ type: 'join', room: roomName, name: playerName || 'Player', playerId: mpPlayerId || undefined }));
+      mpSocket.send(JSON.stringify({ type: 'join', room: roomName, name: playerName || 'Player', playerId: mpPlayerId || undefined, preferredSeat: mpPreferredSeat }));
     } catch(e) {
       console.error('[MP] Join send error:', e);
       mpSocket.close(); // Trigger reconnect
@@ -264,7 +264,7 @@ function mpConnect(roomName) {
     console.log('[MP] WebSocket opened, joining room:', roomName);
     _mpReconnectAttempts = 0; // V10_113: Reset on successful connection
     try {
-      mpSocket.send(JSON.stringify({ type: 'join', room: roomName, name: playerName || 'Player', playerId: mpPlayerId || undefined }));
+      mpSocket.send(JSON.stringify({ type: 'join', room: roomName, name: playerName || 'Player', playerId: mpPlayerId || undefined, preferredSeat: mpPreferredSeat }));
     } catch(e) {
       console.error('[MP] Join send error on open:', e);
       mpSocket.close(); // Trigger reconnect
