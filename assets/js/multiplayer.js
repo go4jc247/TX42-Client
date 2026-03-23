@@ -1727,11 +1727,18 @@ function mpShowObserverControls() { /* no-op */ }
   }
 
   // On page load: show name entry if no name, otherwise show lobby
-  if (!playerName || playerNoName) {
-    document.getElementById('nameEntryBackdrop').style.display = 'flex';
-  } else {
+  try {
+    if (!playerName || playerNoName) {
+      document.getElementById('nameEntryBackdrop').style.display = 'flex';
+    } else {
+      document.getElementById('mpBackdrop').style.display = 'flex';
+      mpBuildRoomButtons();
+    }
+  } catch (e) {
+    console.error('[MP] Lobby init error:', e);
+    // Fallback: force show lobby
     document.getElementById('mpBackdrop').style.display = 'flex';
-    mpBuildRoomButtons();
+    try { mpBuildRoomButtons(); } catch (e2) { console.error('[MP] Room build error:', e2); }
   }
 
   // Show player name in topbar
